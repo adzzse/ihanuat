@@ -63,6 +63,15 @@ public class ConfigScreenFactory {
                 ConfigCategory delays = builder.getOrCreateCategory(Component.literal("Delays"));
 
                 delays.addEntry(builder.entryBuilder()
+                                .startIntSlider(Component.literal("Additional Random Delay (0-1000ms)"),
+                                                MacroConfig.additionalRandomDelay, 0, 1000)
+                                .setDefaultValue(MacroConfig.DEFAULT_ADDITIONAL_RANDOM_DELAY)
+                                .setTooltip(Component.literal(
+                                                "Adds extra random delay to GUI clicks, tool swaps, warps, and rotations"))
+                                .setSaveConsumer(newValue -> MacroConfig.additionalRandomDelay = newValue)
+                                .build());
+
+                delays.addEntry(builder.entryBuilder()
                                 .startIntSlider(Component.literal("Rotation Time (ms)"), MacroConfig.rotationTime,
                                                 100, 3000)
                                 .setDefaultValue(MacroConfig.DEFAULT_ROTATION_TIME)
@@ -88,15 +97,6 @@ public class ConfigScreenFactory {
                                                 MacroConfig.rodSwapDelay, 50, 1000)
                                 .setDefaultValue(MacroConfig.DEFAULT_ROD_SWAP_DELAY)
                                 .setSaveConsumer(newValue -> MacroConfig.rodSwapDelay = newValue)
-                                .build());
-
-                delays.addEntry(builder.entryBuilder()
-                                .startIntSlider(Component.literal("Additional Random Delay (0-1000ms)"),
-                                                MacroConfig.additionalRandomDelay, 0, 1000)
-                                .setDefaultValue(MacroConfig.DEFAULT_ADDITIONAL_RANDOM_DELAY)
-                                .setTooltip(Component.literal(
-                                                "Adds extra random delay to GUI clicks, tool swaps, warps, and rotations"))
-                                .setSaveConsumer(newValue -> MacroConfig.additionalRandomDelay = newValue)
                                 .build());
 
                 delays.addEntry(builder.entryBuilder()

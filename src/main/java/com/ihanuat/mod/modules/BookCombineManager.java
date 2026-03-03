@@ -38,7 +38,7 @@ public class BookCombineManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - interactionTime < MacroConfig.bookCombineDelay)
+        if (now - interactionTime < MacroConfig.getRandomizedDelay(MacroConfig.bookCombineDelay))
             return;
 
         String title = screen.getTitle().getString();

@@ -175,7 +175,7 @@ public class PestManager {
                             Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Warping to Garden..."),
                             true);
                     ClientUtils.sendCommand(client, "/warp garden");
-                    Thread.sleep(MacroConfig.gardenWarpDelay);
+                    Thread.sleep(MacroConfig.getRandomizedDelay(MacroConfig.gardenWarpDelay));
 
                     GearManager.swapToFarmingToolSync(client);
 
@@ -201,7 +201,7 @@ public class PestManager {
 
                 Thread.sleep(150);
                 ClientUtils.sendCommand(client, "/warp garden");
-                Thread.sleep(MacroConfig.gardenWarpDelay);
+                Thread.sleep(MacroConfig.getRandomizedDelay(MacroConfig.gardenWarpDelay));
 
                 isReturningFromPestVisitor = true;
                 finalizeReturnToFarm(client);
