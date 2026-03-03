@@ -181,11 +181,17 @@ public class PestManager {
 
                 int visitors = VisitorManager.getVisitorCount(client);
                 if (visitors >= MacroConfig.visitorThreshold) {
-                    client.player.displayClientMessage(
-                            Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Warping to Garden..."),
-                            true);
-                    com.ihanuat.mod.util.CommandUtils.warpGarden(client);
-                    Thread.sleep(250);
+                    MacroState.Location loc = ClientUtils.getCurrentLocation(client);
+                    if (loc != MacroState.Location.GARDEN) {
+                        client.player.displayClientMessage(
+                                Component.literal(
+                                        "\u00A7dVisitor Threshold Met (" + visitors + "). Warping to Garden..."),
+                                true);
+                        com.ihanuat.mod.util.CommandUtils.warpGarden(client);
+                        Thread.sleep(250);
+                    } else {
+                        ClientUtils.sendDebugMessage(client, "Already in Garden, skipping /warp garden for visitors");
+                    }
 
                     GearManager.swapToFarmingToolSync(client);
 
@@ -368,6 +374,8 @@ public class PestManager {
         com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.CLEANING);
         currentInfestedPlot = plot;
         final int sessionId = ++currentPestSessionId;
+        String currentPlot = ClientUtils.getCurrentPlot(client);
+        ClientUtils.sendDebugMessage(client, "pests spawned in " + plot + ", current plot " + currentPlot);
 
         new Thread(() -> {
             try {
@@ -420,7 +428,8 @@ public class PestManager {
                 }
 
                 try {
-                    if (MacroConfig.aotvToRoof) {
+                    boolean isSamePlot = currentInfestedPlot != null && currentInfestedPlot.equals(currentPlot);
+                    if (MacroConfig.aotvToRoof && isSamePlot) {
                         // AOTV to Roof sequence
                         client.player.displayClientMessage(Component.literal("§6Using AOTV to Roof sequence..."), true);
 

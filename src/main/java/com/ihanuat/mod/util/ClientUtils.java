@@ -173,6 +173,58 @@ public class ClientUtils {
         return 0;
     }
 
+    public static String getCurrentPlot(Minecraft client) {
+        if (client.level == null || client.player == null)
+            return "Unknown";
+
+        Scoreboard scoreboard = client.level.getScoreboard();
+        if (scoreboard == null)
+            return "Unknown";
+
+        Objective sidebar = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+        if (sidebar == null)
+            return "Unknown";
+
+        Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
+        for (PlayerScoreEntry entry : scores) {
+            String entryName = entry.owner();
+            PlayerTeam team = scoreboard.getPlayersTeam(entryName);
+            String fullText = entryName;
+            if (team != null) {
+                fullText = team.getPlayerPrefix().getString() + entryName + team.getPlayerSuffix().getString();
+            }
+            String line = fullText.replaceAll("(?i)\u00A7.", "").trim();
+
+            // Match formats: "Plot: 14", "Plot - 6", "Plot #14", "Plot: Barn"
+            // Handles non-standard color codes like §y and multiple spaces.
+            if (line.toLowerCase().contains("plot")) {
+                java.util.regex.Pattern p = java.util.regex.Pattern.compile("plot\\s*[:\\-#]\\s*([a-z0-9]+)",
+                        java.util.regex.Pattern.CASE_INSENSITIVE);
+                java.util.regex.Matcher m = p.matcher(line);
+                if (m.find()) {
+                    return m.group(1).trim();
+                }
+            }
+        }
+
+        // If we reached here, we couldn't find the "Plot:" line.
+        // Let's print all lines to debug if showDebug is on.
+        if (MacroConfig.showDebug) {
+            sendDebugMessage(client, "Failed to find Plot in Scoreboard. Lines found:");
+            for (PlayerScoreEntry entry : scores) {
+                String entryName = entry.owner();
+                PlayerTeam team = scoreboard.getPlayersTeam(entryName);
+                String fullText = entryName;
+                if (team != null) {
+                    fullText = team.getPlayerPrefix().getString() + entryName + team.getPlayerSuffix().getString();
+                }
+                sendDebugMessage(client, " - " + fullText.replaceAll("(?i)\u00A7[0-9A-FK-ORZ]", ""));
+            }
+        }
+
+        return "Unknown";
+    }
+
     public static boolean hasLineOfSight(Player player, Vec3 target) {
         if (player.level() == null)
             return false;

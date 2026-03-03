@@ -22,6 +22,7 @@ public class MacroConfig {
     }
 
     public static final int DEFAULT_PEST_THRESHOLD = 5;
+    public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = false;
     public static final int DEFAULT_VISITOR_THRESHOLD = 5;
     public static final GearSwapMode DEFAULT_GEAR_SWAP_MODE = GearSwapMode.NONE;
     public static final UnflyMode DEFAULT_UNFLY_MODE = UnflyMode.DOUBLE_TAP_SPACE;
@@ -94,6 +95,7 @@ public class MacroConfig {
     public static final boolean DEFAULT_SHOW_LIFETIME_HUD = false;
 
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
+    public static boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
     public static int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
     public static GearSwapMode gearSwapMode = DEFAULT_GEAR_SWAP_MODE;
     public static UnflyMode unflyMode = DEFAULT_UNFLY_MODE;
@@ -286,6 +288,7 @@ public class MacroConfig {
     public static void save() {
         ConfigData data = new ConfigData();
         data.pestThreshold = pestThreshold;
+        data.triggerPestOnChat = triggerPestOnChat;
         data.visitorThreshold = visitorThreshold;
         data.gearSwapMode = gearSwapMode;
         data.unflyMode = unflyMode;
@@ -374,6 +377,7 @@ public class MacroConfig {
             ConfigData data = GSON.fromJson(reader, ConfigData.class);
             if (data != null) {
                 pestThreshold = data.pestThreshold;
+                triggerPestOnChat = data.triggerPestOnChat;
                 visitorThreshold = data.visitorThreshold;
                 gearSwapMode = data.gearSwapMode != null ? data.gearSwapMode : DEFAULT_GEAR_SWAP_MODE;
                 unflyMode = data.unflyMode != null ? data.unflyMode : DEFAULT_UNFLY_MODE;
@@ -466,6 +470,7 @@ public class MacroConfig {
 
     private static class ConfigData {
         int pestThreshold = DEFAULT_PEST_THRESHOLD;
+        boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
         int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
         GearSwapMode gearSwapMode = DEFAULT_GEAR_SWAP_MODE;
         UnflyMode unflyMode = DEFAULT_UNFLY_MODE;

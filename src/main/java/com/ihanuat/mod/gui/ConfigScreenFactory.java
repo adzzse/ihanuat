@@ -49,18 +49,6 @@ public class ConfigScreenFactory {
                                 .build());
 
                 general.addEntry(builder.entryBuilder()
-                                .startBooleanToggle(Component.literal("AOTV to Roof"), MacroConfig.aotvToRoof)
-                                .setDefaultValue(MacroConfig.DEFAULT_AOTV_TO_ROOF)
-                                .setSaveConsumer(newValue -> MacroConfig.aotvToRoof = newValue)
-                                .build());
-
-                general.addEntry(builder.entryBuilder()
-                                .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
-                                .setDefaultValue(MacroConfig.DEFAULT_PEST_THRESHOLD)
-                                .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
-                                .build());
-
-                general.addEntry(builder.entryBuilder()
                                 .startStringDropdownMenu(Component.literal("Farm Script Command"),
                                                 MacroConfig.restartScript)
                                 .setDefaultValue(MacroConfig.DEFAULT_RESTART_SCRIPT)
@@ -199,6 +187,32 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(newValue -> MacroConfig.autoEquipment = newValue)
                                 .build());
 
+                // --- Auto Pest Category ---
+                ConfigCategory autoPest = builder.getOrCreateCategory(Component.literal("Auto Pest"));
+
+                autoPest.addEntry(builder.entryBuilder()
+                                .startIntSlider(Component.literal("Pest Threshold"), MacroConfig.pestThreshold, 1, 8)
+                                .setDefaultValue(MacroConfig.DEFAULT_PEST_THRESHOLD)
+                                .setSaveConsumer(newValue -> MacroConfig.pestThreshold = newValue)
+                                .build());
+
+                autoPest.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("Trigger Pest on Chat"),
+                                                MacroConfig.triggerPestOnChat)
+                                .setDefaultValue(MacroConfig.DEFAULT_TRIGGER_PEST_ON_CHAT)
+                                .setTooltip(Component.literal(
+                                                "Instantly trigger pest cleaner upon seeing 'yuck, pest spawned in plot #' in chat."))
+                                .setSaveConsumer(newValue -> MacroConfig.triggerPestOnChat = newValue)
+                                .build());
+
+                autoPest.addEntry(builder.entryBuilder()
+                                .startBooleanToggle(Component.literal("AOTV to Roof"), MacroConfig.aotvToRoof)
+                                .setDefaultValue(MacroConfig.DEFAULT_AOTV_TO_ROOF)
+                                .setTooltip(Component.literal(
+                                                "Uses Aspect of the Void to etherwarp to the roof after /setspawn during pest cleaning."))
+                                .setSaveConsumer(newValue -> MacroConfig.aotvToRoof = newValue)
+                                .build());
+
                 // --- Auto Visitor Category ---
                 ConfigCategory autoVisitorCat = builder.getOrCreateCategory(Component.literal("Auto Visitor"));
 
@@ -313,6 +327,28 @@ public class ConfigScreenFactory {
                                 .setExpanded(true)
                                 .setSaveConsumer(newValue -> MacroConfig.petTrackerList = newValue)
                                 .build());
+
+                profitTracker.addEntry(new DualButtonEntry(
+                                Component.literal("Reset Profit Data"),
+                                Component.literal("Clears your tracked earnings. Cannot be undone."),
+                                Component.literal("Reset Session"),
+                                button -> {
+                                        com.ihanuat.mod.modules.ProfitManager.reset();
+                                        Minecraft client = Minecraft.getInstance();
+                                        if (client.player != null) {
+                                                client.player.displayClientMessage(
+                                                                Component.literal("§aSession profit reset!"), true);
+                                        }
+                                },
+                                Component.literal("Reset Lifetime"),
+                                button -> {
+                                        com.ihanuat.mod.modules.ProfitManager.resetLifetime();
+                                        Minecraft client = Minecraft.getInstance();
+                                        if (client.player != null) {
+                                                client.player.displayClientMessage(
+                                                                Component.literal("§aLifetime profit reset!"), true);
+                                        }
+                                }));
 
                 // --- Dynamic Rest Category ---
                 ConfigCategory dynamicRest = builder.getOrCreateCategory(Component.literal("Dynamic Rest"));
@@ -474,6 +510,63 @@ public class ConfigScreenFactory {
                 @Override
                 public @NotNull List<? extends NarratableEntry> narratables() {
                         return Collections.singletonList(button);
+                }
+
+                @Override
+                public @NotNull Object getValue() {
+                        return "";
+                }
+
+                @Override
+                public @NotNull Optional<Object> getDefaultValue() {
+                        return Optional.empty();
+                }
+
+                @Override
+                public void save() {
+                }
+        }
+
+        private static class DualButtonEntry extends TooltipListEntry<Object> {
+                private final Button button1;
+                private final Button button2;
+                private final Component fieldName;
+
+                public DualButtonEntry(Component fieldName, Component tooltip,
+                                Component b1Label, Button.OnPress b1OnPress,
+                                Component b2Label, Button.OnPress b2OnPress) {
+                        super(fieldName, () -> Optional.of(new Component[] { tooltip }));
+                        this.fieldName = fieldName;
+                        this.button1 = Button.builder(b1Label, b1OnPress).bounds(0, 0, 75, 20).build();
+                        this.button2 = Button.builder(b2Label, b2OnPress).bounds(0, 0, 75, 20).build();
+                }
+
+                @Override
+                public void render(@NotNull GuiGraphics graphics, int index, int y, int x, int entryWidth,
+                                int entryHeight, int mouseX, int mouseY, boolean isHovered, float tickDelta) {
+                        super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered,
+                                        tickDelta);
+                        this.button2.setX(x + entryWidth - 80);
+                        this.button2.setY(y);
+                        this.button2.setWidth(75);
+                        this.button2.render(graphics, mouseX, mouseY, tickDelta);
+
+                        this.button1.setX(x + entryWidth - 160);
+                        this.button1.setY(y);
+                        this.button1.setWidth(75);
+                        this.button1.render(graphics, mouseX, mouseY, tickDelta);
+
+                        graphics.drawString(Minecraft.getInstance().font, fieldName, x, y + 6, 0xFFFFFF);
+                }
+
+                @Override
+                public @NotNull List<? extends GuiEventListener> children() {
+                        return java.util.Arrays.asList(button1, button2);
+                }
+
+                @Override
+                public @NotNull List<? extends NarratableEntry> narratables() {
+                        return java.util.Arrays.asList(button1, button2);
                 }
 
                 @Override

@@ -175,13 +175,35 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
-                if (lowerText.contains("yuck!") && lowerText.contains("spawned in plot")) {
-                    if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
-                        Pattern p = Pattern.compile("Plot\\s*(?:-|#)\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-                        Matcher m = p.matcher(text);
-                        if (m.find()) {
-                            String plot = m.group(1);
-                            PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                String plainText = text.replaceAll("(?i)\u00A7.", "");
+
+                // Debug for ANY message containing "YUCK" or "Plot" for diagnostic purposes
+                if (lowerText.contains("yuck") && MacroConfig.showDebug) {
+                    ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                            "Diagnose: Seen YUCK in chat. Text: " + plainText);
+                }
+
+                if (MacroConfig.triggerPestOnChat && lowerText.contains("yuck") && lowerText.contains("plot")) {
+                    if (MacroConfig.showDebug) {
+                        ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                                "YUCK detected. State: " + MacroStateManager.getCurrentState());
+                    }
+                    if (lowerText.contains("spawned") || lowerText.contains("phillip")) {
+                        if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                            // Match format: "Plot - 14" or "Plot #14" or "Plot: 6"
+                            Pattern p = Pattern.compile("Plot\\s*[\\-#:]\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+                            Matcher m = p.matcher(plainText);
+                            if (m.find()) {
+                                String plot = m.group(1);
+                                if (MacroConfig.showDebug) {
+                                    ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                                            "Chat pest trigger matched plot: " + plot);
+                                }
+                                PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                            } else if (MacroConfig.showDebug) {
+                                ClientUtils.sendDebugMessage(Minecraft.getInstance(),
+                                        "Chat pest trigger failed regex on: " + plainText);
+                            }
                         }
                     }
                 }
