@@ -1,6 +1,8 @@
 package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
+import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -210,6 +212,7 @@ public class GeorgeManager {
                     com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
+                        ClientUtils.sendDebugMessage(client, "Starting farming script after George sell: " + MacroConfig.getFullRestartCommand());
                         com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                     });
                 } catch (Exception ignored) {
@@ -247,6 +250,7 @@ public class GeorgeManager {
 
         new Thread(() -> {
             try {
+                ClientUtils.sendDebugMessage(client, "Stopping script: Preparing George sell");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
 
                 boolean success = true;

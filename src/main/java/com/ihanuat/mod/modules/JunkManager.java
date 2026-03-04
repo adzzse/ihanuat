@@ -132,6 +132,7 @@ public class JunkManager {
                 if (!isPreparingToDrop)
                     return;
 
+                ClientUtils.sendDebugMessage(client, "Stopping script: Preparing to drop junk");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
                 Thread.sleep(400); // Small safety delay after stop
 
@@ -214,6 +215,7 @@ public class JunkManager {
                 if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
+                        ClientUtils.sendDebugMessage(client, "Starting farming script after junk drop: " + MacroConfig.getFullRestartCommand());
                         com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                     });
                 }

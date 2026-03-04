@@ -50,12 +50,14 @@ public class GearManager {
 
     public static void triggerWardrobeSwap(Minecraft client, int slot) {
         if (trackedWardrobeSlot == slot) {
+            ClientUtils.sendDebugMessage(client, "Stopping script: Wardrobe already on target slot, restarting");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
             new Thread(() -> {
                 try {
                     Thread.sleep(400);
                     client.execute(() -> GearManager.swapToFarmingTool(client));
                     Thread.sleep(250);
+                    ClientUtils.sendDebugMessage(client, "Starting farming script after wardrobe swap: " + MacroConfig.getFullRestartCommand());
                     com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                 } catch (Exception ignored) {
                 }
@@ -73,6 +75,7 @@ public class GearManager {
         wardrobeInteractionTime = 0;
         wardrobeInteractionStage = 0;
         shouldRestartFarmingAfterSwap = true;
+        ClientUtils.sendDebugMessage(client, "Stopping script: Triggering wardrobe swap to slot " + slot);
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
         new Thread(() -> {
             try {

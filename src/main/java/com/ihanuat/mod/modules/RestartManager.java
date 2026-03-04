@@ -39,6 +39,7 @@ public class RestartManager {
         if (restartSequenceStage == 0 && System.currentTimeMillis() >= restartExecutionTime) {
             client.player.displayClientMessage(
                     Component.literal("§c[Ihanuat] Executing delayed restart abort sequence..."), false);
+            ClientUtils.sendDebugMessage(client, "Stopping script: Server restart/evacuation detected");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
             ClientUtils.forceReleaseKeys(client);
             com.ihanuat.mod.util.CommandUtils.initiateSetSpawn(client);
@@ -52,6 +53,7 @@ public class RestartManager {
                 nextRestartActionTime = System.currentTimeMillis() + 10000;
             }
         } else if (restartSequenceStage == 2 && System.currentTimeMillis() >= nextRestartActionTime) {
+            ClientUtils.sendDebugMessage(client, "Stopping script: Entering recovery mode after server restart");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
             MacroStateManager.setCurrentState(MacroState.State.RECOVERING);
             restartSequenceStage = 0;

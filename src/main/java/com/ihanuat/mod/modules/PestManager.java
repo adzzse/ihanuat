@@ -216,7 +216,9 @@ public class PestManager {
                     ClientUtils.waitForGearAndGui(client);
                     ClientUtils.sendDebugMessage(client, "Wardrobe swap done, now triggering visitor macro");
                     MacroStateManager.setCurrentState(MacroState.State.VISITING);
+                    ClientUtils.sendDebugMessage(client, "Stopping script: Visitor threshold reached");
                     com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
+                    ClientUtils.sendDebugMessage(client, "Starting visitor macro script");
                     com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:visitor", 0);
                     isCleaningInProgress = false;
                     client.player.displayClientMessage(
@@ -311,7 +313,9 @@ public class PestManager {
                 } catch (InterruptedException ignored) {
                 }
                 ClientUtils.sendDebugMessage(client, "Wardrobe swap done, now triggering visitor macro");
+                ClientUtils.sendDebugMessage(client, "Stopping script: Returning to visitor macro");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
+                ClientUtils.sendDebugMessage(client, "Starting visitor macro script");
                 com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:visitor", 0);
                 isCleaningInProgress = false;
                 return;
@@ -326,6 +330,7 @@ public class PestManager {
 
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             prepSwappedForCurrentPestCycle = false; // Ensure flag is reset when returning
+            ClientUtils.sendDebugMessage(client, "Stopping script: Pest cleaning finished, returning to farming");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
             isCleaningInProgress = false;
             if (client.player != null) {
@@ -333,6 +338,7 @@ public class PestManager {
             }
             com.ihanuat.mod.util.ClientUtils.sendDebugMessage(client,
                     "Pest cleaning sequence finished. Restarting farming...");
+            ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
             com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
         } catch (InterruptedException ignored) {
         }
@@ -348,6 +354,7 @@ public class PestManager {
         ClientUtils.sendDebugMessage(client, "Pest cooldown detected. Triggering prep-swap...");
         new Thread(() -> {
             try {
+                ClientUtils.sendDebugMessage(client, "Stopping script: Triggering prep-swap");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
                 // Wait for script to actually stop before attempting wardrobe swap
                 Thread.sleep(400);
@@ -420,6 +427,7 @@ public class PestManager {
         if (isCleaningInProgress || GearManager.isSwappingWardrobe || GearManager.isSwappingEquipment)
             return;
 
+        ClientUtils.sendDebugMessage(client, "Stopping script: Pest threshold reached, starting cleaning sequence for plot " + plot);
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
         isCleaningInProgress = true;
         GearManager.shouldRestartFarmingAfterSwap = false;
@@ -603,8 +611,10 @@ public class PestManager {
                     }
 
                     // Trigger pest cleaning sequence immediately
+                    ClientUtils.sendDebugMessage(client, "Stopping script: Ready to start pest cleaner");
                     com.ihanuat.mod.util.CommandUtils.stopScript(client, 50); // Minimal delay
                     GearManager.swapToFarmingToolSync(client);
+                    ClientUtils.sendDebugMessage(client, "Starting pest cleaner script for plot " + currentInfestedPlot);
                     com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
                 } catch (InterruptedException ignored) {
                 }
@@ -629,8 +639,11 @@ public class PestManager {
                     "§aPhillip message detected! Returning to plot §e" + currentInfestedPlot + "..."), true);
             new Thread(() -> {
                 try {
+                    ClientUtils.sendDebugMessage(client, "Stopping script: Phillip message detected, reactivating bonus");
                     com.ihanuat.mod.util.CommandUtils.stopScript(client, MacroConfig.getRandomizedDelay(250));
+                    ClientUtils.sendDebugMessage(client, "Teleporting back to plot " + currentInfestedPlot);
                     com.ihanuat.mod.util.CommandUtils.plotTp(client, currentInfestedPlot);
+                    ClientUtils.sendDebugMessage(client, "Starting pest cleaner script after Phillip message");
                     com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 250);
                 } catch (Exception e) {
                     e.printStackTrace();

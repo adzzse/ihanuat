@@ -1,6 +1,8 @@
 package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
+import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
@@ -194,6 +196,7 @@ public class BookCombineManager {
 
         new Thread(() -> {
             try {
+                ClientUtils.sendDebugMessage(client, "Stopping script: Preparing book combine");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
 
                 boolean success = true;
@@ -248,6 +251,7 @@ public class BookCombineManager {
                     client.execute(() -> GearManager.swapToFarmingTool(client));
                     Thread.sleep(200);
 
+                    ClientUtils.sendDebugMessage(client, "Starting farming script after book combine: " + MacroConfig.getFullRestartCommand());
                     com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                 } catch (Exception ignored) {
                 }

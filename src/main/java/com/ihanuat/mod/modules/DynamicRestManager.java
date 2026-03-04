@@ -149,6 +149,7 @@ public class DynamicRestManager {
                 }
 
                 // Stop the farming script, release all keys, /setspawn
+                ClientUtils.sendDebugMessage(client, "Stopping script: Initiating dynamic rest sequence");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
                 ClientUtils.forceReleaseKeys(client);
                 client.player.displayClientMessage(

@@ -113,7 +113,9 @@ public class VisitorManager {
             ClientUtils.waitForGearAndGui(client);
                         ClientUtils.sendDebugMessage(client, "Wardrobe swap done, now triggering visitor macro");
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.VISITING);
+            ClientUtils.sendDebugMessage(client, "Stopping script: Returning to visitor macro (threshold met)");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
+            ClientUtils.sendDebugMessage(client, "Starting visitor macro script");
             com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:visitor", 0);
             PestManager.isCleaningInProgress = false;
             return;
@@ -140,7 +142,9 @@ public class VisitorManager {
                 true);
         ClientUtils.sendDebugMessage(client, "Setting state to FARMING and starting script.");
         com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
+        ClientUtils.sendDebugMessage(client, "Stopping script: Visitor sequence finished, returning to farming");
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
+        ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
         com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
         PestManager.isCleaningInProgress = false;
     }
