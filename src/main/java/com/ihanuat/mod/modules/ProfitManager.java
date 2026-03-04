@@ -782,7 +782,11 @@ public class ProfitManager {
                     if (com.ihanuat.mod.MacroStateManager.getCurrentState() != MacroState.State.OFF &&
                             com.ihanuat.mod.MacroStateManager.getCurrentState() != MacroState.State.AUTOSELLING) {
                         long delta = currentPurse - lastPurseBalance;
-                        addDrop("Purse", delta);
+                        if (delta <= 50000) {
+                            addDrop("Purse", delta);
+                        } else if (com.ihanuat.mod.MacroConfig.showDebug) {
+                            ClientUtils.sendDebugMessage(client, "Dismissed large purse change: +" + delta);
+                        }
                     }
                 }
             }
