@@ -156,6 +156,15 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(newValue -> MacroConfig.bookCombineDelay = newValue)
                                 .build());
 
+                delays.addEntry(builder.entryBuilder()
+                                .startIntSlider(Component.literal("Junk Item Drop Delay (0-1000ms)"),
+                                                MacroConfig.junkItemDropDelay, 0, 1000)
+                                .setDefaultValue(MacroConfig.DEFAULT_JUNK_ITEM_DROP_DELAY)
+                                .setTooltip(Component.literal(
+                                                "Delay between dropping junk items (in milliseconds)."))
+                                .setSaveConsumer(newValue -> MacroConfig.junkItemDropDelay = newValue)
+                                .build());
+
                 // --- Wardrobe Swap Category ---
                 ConfigCategory wardrobe = builder.getOrCreateCategory(Component.literal("Wardrobe Swap"));
 

@@ -75,6 +75,7 @@ public class MacroConfig {
             "Fruit Bowl", "Farming Exp Boost", "Sunder VI");
     public static final String DEFAULT_DROP_JUNK_PLOT_TP = "0";
     public static final int DEFAULT_JUNK_THRESHOLD = 3;
+    public static final int DEFAULT_JUNK_ITEM_DROP_DELAY = 300;
     public static final int DEFAULT_PEST_CHAT_TRIGGER_DELAY = 0;
     public static final boolean DEFAULT_SHOW_DEBUG = false;
 
@@ -201,6 +202,7 @@ public class MacroConfig {
     public static java.util.List<String> junkItems = new java.util.ArrayList<>(DEFAULT_JUNK_ITEMS);
     public static String dropJunkPlotTp = DEFAULT_DROP_JUNK_PLOT_TP;
     public static int junkThreshold = DEFAULT_JUNK_THRESHOLD;
+    public static int junkItemDropDelay = DEFAULT_JUNK_ITEM_DROP_DELAY;
     public static boolean showDebug = DEFAULT_SHOW_DEBUG;
 
     public static java.util.List<String> petTrackerList = new java.util.ArrayList<>(DEFAULT_PET_TRACKER_LIST);
@@ -348,6 +350,7 @@ public class MacroConfig {
         data.junkItems = new java.util.ArrayList<>(junkItems);
         data.dropJunkPlotTp = dropJunkPlotTp;
         data.junkThreshold = junkThreshold;
+        data.junkItemDropDelay = junkItemDropDelay;
         data.showDebug = showDebug;
 
         data.petTrackerList = new java.util.ArrayList<>(petTrackerList);
@@ -451,6 +454,7 @@ public class MacroConfig {
                     dropJunkPlotTp = data.dropJunkPlotTp;
                 }
                 junkThreshold = data.junkThreshold;
+                junkItemDropDelay = data.junkItemDropDelay;
                 showDebug = data.showDebug;
 
                 if (data.petTrackerList != null) {
@@ -536,6 +540,7 @@ public class MacroConfig {
         java.util.List<String> junkItems = new java.util.ArrayList<>(DEFAULT_JUNK_ITEMS);
         String dropJunkPlotTp = DEFAULT_DROP_JUNK_PLOT_TP;
         int junkThreshold = DEFAULT_JUNK_THRESHOLD;
+        int junkItemDropDelay = DEFAULT_JUNK_ITEM_DROP_DELAY;
         boolean showDebug = DEFAULT_SHOW_DEBUG;
 
         java.util.List<String> petTrackerList = new java.util.ArrayList<>(DEFAULT_PET_TRACKER_LIST);
