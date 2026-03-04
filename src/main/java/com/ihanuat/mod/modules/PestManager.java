@@ -294,13 +294,14 @@ public class PestManager {
             }
 
             ClientUtils.waitForGearAndGui(client);
+
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
             prepSwappedForCurrentPestCycle = false; // Ensure flag is reset when returning
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
-            if (isCleaningInProgress || isPrepSwapping)
-                return;
-            com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
             isCleaningInProgress = false;
+            com.ihanuat.mod.util.ClientUtils.sendDebugMessage(client,
+                    "Pest cleaning sequence finished. Restarting farming...");
+            com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
         } catch (InterruptedException ignored) {
         }
     }
@@ -322,11 +323,40 @@ public class PestManager {
                     return;
                 }
 
+                if (isCleaningInProgress) {
+                    prepSwappedForCurrentPestCycle = false;
+                    return;
+                }
+
+                // 1. Wardrobe (Synchronous wait)
+                if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE && MacroConfig.wardrobeSlotPest > 0) {
+                    GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotPest);
+                    if (GearManager.isSwappingWardrobe) {
+                        ClientUtils.waitForWardrobeGui(client);
+                        while (GearManager.isSwappingWardrobe && !isCleaningInProgress)
+                            Thread.sleep(50);
+                        Thread.sleep(250);
+                    }
+                }
+
+                if (isCleaningInProgress) {
+                    prepSwappedForCurrentPestCycle = false;
+                    return;
+                }
+
+                // 2. Equipment (Synchronous wait)
                 if (MacroConfig.autoEquipment) {
                     GearManager.ensureEquipment(client, false);
+                    // Give server time to open GUI before we even check
+                    Thread.sleep(200);
                     ClientUtils.waitForEquipmentGui(client);
                     while (GearManager.isSwappingEquipment && !isCleaningInProgress)
                         Thread.sleep(50);
+
+                    // Ensure the screen is actually gone
+                    while (client.screen != null && !isCleaningInProgress) {
+                        Thread.sleep(50);
+                    }
                     Thread.sleep(250);
                 }
 
@@ -335,13 +365,14 @@ public class PestManager {
                     return;
                 }
 
+                // 3. Rod Sequence (Wait for previous steps confirmed by GearManager checks)
                 if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD) {
                     GearManager.executeRodSequence(client);
-                    resumeAfterPrepSwap(client);
-                } else if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
-                    GearManager.triggerWardrobeSwap(client, MacroConfig.wardrobeSlotPest);
-                } else {
-                    resumeAfterPrepSwap(client);
+                }
+
+                // 3. Final Resume
+                if (!isCleaningInProgress) {
+                    GearManager.finalResume(client);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -349,19 +380,6 @@ public class PestManager {
                 isPrepSwapping = false;
             }
         }).start();
-    }
-
-    private static void resumeAfterPrepSwap(Minecraft client) {
-        ClientUtils.waitForGearAndGui(client);
-        GearManager.swapToFarmingToolSync(client);
-
-        if (isCleaningInProgress)
-            return;
-
-        client.execute(() -> {
-            com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
-            com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
-        });
     }
 
     public static void startCleaningSequence(Minecraft client, String plot) {
@@ -429,7 +447,7 @@ public class PestManager {
 
                 try {
                     boolean isSamePlot = currentInfestedPlot != null && currentInfestedPlot.equals(currentPlot);
-                    if (MacroConfig.aotvToRoof && isSamePlot) {
+                    if (MacroConfig.aotvToRoof && (!MacroConfig.aotvToRoofOnlySamePlot || isSamePlot)) {
                         // AOTV to Roof sequence
                         client.player.displayClientMessage(Component.literal("§6Using AOTV to Roof sequence..."), true);
 
@@ -555,21 +573,6 @@ public class PestManager {
     private static void triggerCleaningNow(Minecraft client, Set<String> infestedPlots) {
         String targetPlot = infestedPlots.isEmpty() ? "0" : infestedPlots.iterator().next();
         startCleaningSequence(client, targetPlot);
-    }
-
-    public static void resumeAfterPrepSwapLogic(Minecraft client) {
-        new Thread(() -> {
-            try {
-                ClientUtils.waitForGearAndGui(client);
-                GearManager.swapToFarmingToolSync(client);
-                Thread.sleep(250);
-                com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
-                if (isCleaningInProgress || isPrepSwapping)
-                    return;
-                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
-            } catch (Exception ignored) {
-            }
-        }).start();
     }
 
     public static void handlePhillipMessage(Minecraft client, String text) {
