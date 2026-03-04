@@ -286,13 +286,6 @@ public class PestManager {
 
             GearManager.swapToFarmingToolSync(client);
 
-            if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
-                    && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
-                client.player.displayClientMessage(Component.literal(
-                        "§eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
-                client.execute(() -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
-            }
-
             ClientUtils.waitForGearAndGui(client);
 
             com.ihanuat.mod.MacroStateManager.setCurrentState(com.ihanuat.mod.MacroState.State.FARMING);
