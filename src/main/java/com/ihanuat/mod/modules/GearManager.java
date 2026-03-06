@@ -1,6 +1,7 @@
 package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
+import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.mixin.AccessorInventory;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
@@ -52,17 +53,14 @@ public class GearManager {
         if (trackedWardrobeSlot == slot) {
             ClientUtils.sendDebugMessage(client, "Stopping script: Wardrobe already on target slot, restarting");
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
-            new Thread(() -> {
-                try {
-                    Thread.sleep(400);
-                    client.execute(() -> GearManager.swapToFarmingTool(client));
-                    Thread.sleep(250);
-                    ClientUtils.sendDebugMessage(client,
-                            "Starting farming script after wardrobe swap: " + MacroConfig.getFullRestartCommand());
-                    com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
-                } catch (Exception ignored) {
-                }
-            }).start();
+            MacroWorkerThread.getInstance().submit("Wardrobe-AlreadyOnSlot-FastResume", () -> {
+                MacroWorkerThread.sleep(400);
+                client.execute(() -> GearManager.swapToFarmingTool(client));
+                MacroWorkerThread.sleep(250);
+                ClientUtils.sendDebugMessage(client,
+                        "Starting farming script after wardrobe swap: " + MacroConfig.getFullRestartCommand());
+                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+            });
             return;
         }
 
@@ -78,14 +76,11 @@ public class GearManager {
         shouldRestartFarmingAfterSwap = true;
         ClientUtils.sendDebugMessage(client, "Stopping script: Triggering wardrobe swap to slot " + slot);
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
-        new Thread(() -> {
-            try {
-                Thread.sleep(375);
-                client.execute(() -> ClientUtils.sendCommand(client, "/wardrobe"));
-                ClientUtils.waitForWardrobeGui(client);
-            } catch (Exception ignored) {
-            }
-        }).start();
+        MacroWorkerThread.getInstance().submit("Wardrobe-OpenGui", () -> {
+            MacroWorkerThread.sleep(375);
+            client.execute(() -> ClientUtils.sendCommand(client, "/wardrobe"));
+            ClientUtils.waitForWardrobeGui(client);
+        });
     }
 
     public static void ensureWardrobeSlot(Minecraft client, int slot) {
@@ -201,17 +196,13 @@ public class GearManager {
             client.player.displayClientMessage(Component.literal("§aWardrobe swap finished. Restarting farming..."),
                     true);
             client.execute(() -> GearManager.swapToFarmingTool(client));
-            new Thread(() -> {
-                try {
-                    // Removed duplicate ClientUtils.waitForGearAndGui(client);
-                    if (PestManager.isCleaningInProgress)
-                        return;
+            MacroWorkerThread.getInstance().submit("WardrobeCompletion-Resume", () -> {
+                // Removed duplicate ClientUtils.waitForGearAndGui(client);
+                if (PestManager.isCleaningInProgress)
+                    return;
 
-                    finalResume(client);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
+                finalResume(client);
+            });
         }
     }
 
@@ -414,16 +405,13 @@ public class GearManager {
             client.setScreen(null);
             wardrobeCleanupTicks = 10;
             equipmentInteractionStage = 0;
-            new Thread(() -> {
-                try {
-                    Thread.sleep(100);
-                    client.execute(() -> {
-                        if (client.player != null && client.getConnection() != null)
-                            client.getConnection().send(new ServerboundContainerClosePacket(containerId));
-                    });
-                } catch (InterruptedException ignored) {
-                }
-            }).start();
+            MacroWorkerThread.getInstance().submit("Equipment-ClosePacket", () -> {
+                MacroWorkerThread.sleep(100);
+                client.execute(() -> {
+                    if (client.player != null && client.getConnection() != null)
+                        client.getConnection().send(new ServerboundContainerClosePacket(containerId));
+                });
+            });
             return;
         }
 

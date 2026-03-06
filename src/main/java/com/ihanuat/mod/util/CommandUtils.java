@@ -104,15 +104,6 @@ public class CommandUtils {
     public static boolean setSpawn(Minecraft client) {
         ClientUtils.sendCommand(client, "/setspawn");
 
-        if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return true;
-        }
-
         boolean success = waitForChatMessage(client, "Your spawn location has been set!");
 
         if (success) {
@@ -138,9 +129,6 @@ public class CommandUtils {
      * @return true if the spawn confirmation message was received
      */
     public static boolean hasSpawnBeenSet() {
-        if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
-            return false; // Return false to force the caller to wait for their own fallback timeout
-        }
         return hasReceivedMessage("Your spawn location has been set!");
     }
 
@@ -159,15 +147,6 @@ public class CommandUtils {
 
         net.minecraft.world.phys.Vec3 startPos = client.player.position();
         ClientUtils.sendCommand(client, "/warp garden");
-
-        if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return true;
-        }
 
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < MESSAGE_TIMEOUT_MS) {
@@ -217,9 +196,6 @@ public class CommandUtils {
      * @return true if the warp confirmation message was received
      */
     public static boolean hasWarpedGarden() {
-        if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
-            return false;
-        }
         return hasReceivedMessage("Warping...");
     }
 
@@ -238,15 +214,6 @@ public class CommandUtils {
 
         net.minecraft.world.phys.Vec3 startPos = client.player.position();
         ClientUtils.sendCommand(client, "/plottp " + plotNumber);
-
-        if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return true;
-        }
 
         long startTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - startTime < MESSAGE_TIMEOUT_MS) {
@@ -294,9 +261,6 @@ public class CommandUtils {
      * @return true if the warp confirmation message was received
      */
     public static boolean hasPlotTp() {
-        if (com.ihanuat.mod.MacroConfig.delayMode == com.ihanuat.mod.MacroConfig.DelayMode.LEGACY) {
-            return false;
-        }
         return hasReceivedMessage("Teleported you to Plot");
     }
 

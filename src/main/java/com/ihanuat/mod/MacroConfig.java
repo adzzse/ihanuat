@@ -20,10 +20,6 @@ public class MacroConfig {
         SNEAK, DOUBLE_TAP_SPACE
     }
 
-    public enum DelayMode {
-        LEGACY, EXPERIMENTAL
-    }
-
     public static final int DEFAULT_PEST_THRESHOLD = 5;
     public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = true;
     public static final int DEFAULT_VISITOR_THRESHOLD = 5;
@@ -33,7 +29,6 @@ public class MacroConfig {
     public static final boolean DEFAULT_AUTO_ROD_PEST_SPAWN = false;
     public static final boolean DEFAULT_AUTO_ROD_RETURN_TO_FARM = false;
     public static final UnflyMode DEFAULT_UNFLY_MODE = UnflyMode.DOUBLE_TAP_SPACE;
-    public static final DelayMode DEFAULT_DELAY_MODE = DelayMode.LEGACY;
     public static final boolean DEFAULT_AUTO_VISITOR = true;
     public static final boolean DEFAULT_AUTO_EQUIPMENT = true;
     public static final boolean DEFAULT_AUTO_STASH_MANAGER = false;
@@ -116,7 +111,6 @@ public class MacroConfig {
     public static boolean autoRodPestSpawn = DEFAULT_AUTO_ROD_PEST_SPAWN;
     public static boolean autoRodReturnToFarm = DEFAULT_AUTO_ROD_RETURN_TO_FARM;
     public static UnflyMode unflyMode = DEFAULT_UNFLY_MODE;
-    public static DelayMode delayMode = DEFAULT_DELAY_MODE;
     public static boolean autoVisitor = DEFAULT_AUTO_VISITOR;
     public static boolean autoEquipment = DEFAULT_AUTO_EQUIPMENT;
     public static boolean autoStashManager = DEFAULT_AUTO_STASH_MANAGER;
@@ -317,7 +311,6 @@ public class MacroConfig {
         data.autoRodPestSpawn = autoRodPestSpawn;
         data.autoRodReturnToFarm = autoRodReturnToFarm;
         data.unflyMode = unflyMode;
-        data.delayMode = delayMode;
         data.autoVisitor = autoVisitor;
         data.autoEquipment = autoEquipment;
         data.autoStashManager = autoStashManager;
@@ -414,7 +407,6 @@ public class MacroConfig {
                 autoRodPestSpawn = data.autoRodPestSpawn;
                 autoRodReturnToFarm = data.autoRodReturnToFarm;
                 unflyMode = data.unflyMode != null ? data.unflyMode : DEFAULT_UNFLY_MODE;
-                delayMode = data.delayMode != null ? data.delayMode : DEFAULT_DELAY_MODE;
                 autoVisitor = data.autoVisitor;
                 autoEquipment = data.autoEquipment;
                 autoStashManager = data.autoStashManager;
@@ -517,7 +509,6 @@ public class MacroConfig {
         boolean autoRodPestSpawn = DEFAULT_AUTO_ROD_PEST_SPAWN;
         boolean autoRodReturnToFarm = DEFAULT_AUTO_ROD_RETURN_TO_FARM;
         UnflyMode unflyMode = DEFAULT_UNFLY_MODE;
-        DelayMode delayMode = DEFAULT_DELAY_MODE;
         boolean autoVisitor = DEFAULT_AUTO_VISITOR;
         boolean autoEquipment = DEFAULT_AUTO_EQUIPMENT;
         boolean autoStashManager = DEFAULT_AUTO_STASH_MANAGER;

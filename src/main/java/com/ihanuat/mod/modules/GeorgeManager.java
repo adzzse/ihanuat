@@ -2,6 +2,7 @@ package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -56,17 +57,14 @@ public class GeorgeManager {
                     // Restart script as a safety measure
                     if (com.ihanuat.mod.MacroStateManager
                             .getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
-                        new Thread(() -> {
-                            try {
-                                com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
-                                Thread.sleep(1000);
-                                ClientUtils.sendDebugMessage(client,
-                                        "Restarting script after unexpected George GUI closure");
-                                com.ihanuat.mod.util.CommandUtils.startScript(client,
-                                        MacroConfig.getFullRestartCommand(), 0);
-                            } catch (InterruptedException ignored) {
-                            }
-                        }).start();
+                        MacroWorkerThread.getInstance().submit("George-UnexpectedGUI-Restart", () -> {
+                            com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
+                            MacroWorkerThread.sleep(1000);
+                            ClientUtils.sendDebugMessage(client,
+                                    "Restarting script after unexpected George GUI closure");
+                            com.ihanuat.mod.util.CommandUtils.startScript(client,
+                                    MacroConfig.getFullRestartCommand(), 0);
+                        });
                     }
                 }
             }
@@ -228,18 +226,14 @@ public class GeorgeManager {
 
         // Resume farming script if we were farming
         if (com.ihanuat.mod.MacroStateManager.getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
-            new Thread(() -> {
-                try {
-                    com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
-                    client.execute(() -> {
-                        GearManager.swapToFarmingTool(client);
-                        ClientUtils.sendDebugMessage(client,
-                                "Starting farming script after George sell: " + MacroConfig.getFullRestartCommand());
-                        com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
-                    });
-                } catch (Exception ignored) {
-                }
-            }).start();
+            MacroWorkerThread.getInstance().submit("George-FinishSelling-Resume", () -> {
+                com.ihanuat.mod.util.ClientUtils.waitForGearAndGui(client);
+                client.execute(() -> GearManager.swapToFarmingTool(client));
+                MacroWorkerThread.sleep(150);
+                ClientUtils.sendDebugMessage(client,
+                        "Starting farming script after George sell: " + MacroConfig.getFullRestartCommand());
+                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+            });
         }
     }
 
@@ -308,14 +302,14 @@ public class GeorgeManager {
         isPreparingToSell = true;
         isSelling = false;
 
-        new Thread(() -> {
+        MacroWorkerThread.getInstance().submit("George-TriggerSell", () -> {
             try {
                 ClientUtils.sendDebugMessage(client, "Stopping script: Preparing George sell");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
 
                 boolean success = true;
                 for (int i = 0; i < 50; i++) {
-                    Thread.sleep(100);
+                    MacroWorkerThread.sleep(100);
                     if (!isPreparingToSell) {
                         success = false;
                         break;
@@ -341,6 +335,6 @@ public class GeorgeManager {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 }

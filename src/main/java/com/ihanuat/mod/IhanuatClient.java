@@ -59,6 +59,7 @@ public class IhanuatClient implements ClientModInitializer {
         RestStateManager.clearState();
         MacroHudRenderer.register();
         com.ihanuat.mod.gui.ProfitHudRenderer.register();
+        MacroWorkerThread.getInstance().start();
 
         // ── Visitor ROI: detect "offer accepted" chat messages (case-insensitive) ──
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
@@ -105,8 +106,9 @@ public class IhanuatClient implements ClientModInitializer {
                                 String itemName = slot.getItem().getHoverName().getString();
                                 if (itemName.contains("Accept Offer")) {
                                     lastScannedVisitorTitle = title;
-                                    new Thread(() -> VisitorManager.scanVisitorGui(
-                                            Minecraft.getInstance(), containerScr)).start();
+                                    MacroWorkerThread.getInstance().submit("VisitorGui-Scan",
+                                            () -> VisitorManager.scanVisitorGui(
+                                                    Minecraft.getInstance(), containerScr));
                                 }
                             }
                         }
@@ -247,6 +249,8 @@ public class IhanuatClient implements ClientModInitializer {
 
                 if (text.contains("Taunahi >>") && text.contains("Let's use sprayonator.")) {
                     MacroStateManager.setCurrentState(MacroState.State.SPRAYING);
+                    PestManager.isCleaningInProgress = true; // Prevent checkTabListForPests from re-triggering
+                                                             // startCleaningSequence
                     ProfitManager.startSprayPhase();
                     return;
                 }
@@ -300,16 +304,13 @@ public class IhanuatClient implements ClientModInitializer {
                             if (m.find()) {
                                 String plot = m.group(1);
                                 if (MacroConfig.pestChatTriggerDelay > 0) {
-                                    new Thread(() -> {
-                                        try {
-                                            Thread.sleep(MacroConfig.pestChatTriggerDelay);
-                                            PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }).start();
+                                    MacroWorkerThread.getInstance().submit("PestClean-ChatTrigger-" + plot, () -> {
+                                        MacroWorkerThread.sleep(MacroConfig.pestChatTriggerDelay);
+                                        PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                                    });
                                 } else {
-                                    PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                                    MacroWorkerThread.getInstance().submit("PestClean-ChatTrigger-" + plot,
+                                            () -> PestManager.startCleaningSequence(Minecraft.getInstance(), plot));
                                 }
                             } else if (MacroConfig.showDebug) {
                                 ClientUtils.sendDebugMessage(Minecraft.getInstance(),
@@ -319,8 +320,11 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
-                // Debug: log all visitor-related messages when in VISITING/CLEANING state
-                if (MacroConfig.showDebug && plainText.toLowerCase().contains("visitor")) {
+                // Debug: log all visitor-related messages when in VISITING/CLEANING/SPRAYING
+                // state
+                // Guard: skip our own debug messages to avoid a feedback loop
+                if (MacroConfig.showDebug && plainText.toLowerCase().contains("visitor")
+                        && !plainText.startsWith("[Debug]")) {
                     ClientUtils.sendDebugMessage(Minecraft.getInstance(),
                             "[visitorCheck] state=" + MacroStateManager.getCurrentState()
                                     + " hasScript=" + plainText.toLowerCase().contains("script")
@@ -330,7 +334,9 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 if ((MacroStateManager.getCurrentState() == MacroState.State.VISITING
-                        || MacroStateManager.getCurrentState() == MacroState.State.CLEANING)
+                        || MacroStateManager.getCurrentState() == MacroState.State.CLEANING
+                        || MacroStateManager.getCurrentState() == MacroState.State.SPRAYING)
+                        && !plainText.startsWith("[Debug]") // Never trigger on our own debug messages
                         && plainText.toLowerCase().contains("visitor") && plainText.toLowerCase().contains("script")
                         && (plainText.toLowerCase().contains("finished") || plainText.toLowerCase().contains("stopped"))
                         && !plainText.contains("sequence complete")) {
@@ -389,13 +395,13 @@ public class IhanuatClient implements ClientModInitializer {
                     ProfitManager.startStartupPriceFetch();
                     ProfitManager.printPetXpPriceDebug(client);
                     DynamicRestManager.scheduleNextRest();
-                    new Thread(() -> {
+                    MacroWorkerThread.getInstance().submit("StartScript-KeyPress", () -> {
                         try {
                             if (PestManager.prepSwappedForCurrentPestCycle
                                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
                                 client.execute(
                                         () -> GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming));
-                                Thread.sleep(800);
+                                MacroWorkerThread.sleep(800);
                             }
 
                             ClientUtils.waitForGearAndGui(client);
@@ -419,7 +425,7 @@ public class IhanuatClient implements ClientModInitializer {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                    }).start();
+                    });
                 } else {
                     if (!MacroConfig.persistSessionTimer) {
                         DynamicRestManager.reset();
@@ -542,21 +548,17 @@ public class IhanuatClient implements ClientModInitializer {
                     if (distanceSq <= 1.5 * 1.5) { // Within 1.5 blocks
                         lastRewarpTime = now;
                         client.player.displayClientMessage(Component.literal("§6Rewarp End Position reached!"), true);
-                        new Thread(() -> {
-                            try {
-                                client.execute(() -> com.ihanuat.mod.util.CommandUtils.stopScript(client, 0));
-                                Thread.sleep(300);
-                                client.execute(() -> MacroConfig.executePlotTpRewarp(client));
-                                Thread.sleep(1200); // Wait for warp
-                                if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
-                                    client.execute(
-                                            () -> com.ihanuat.mod.util.CommandUtils.startScript(client,
-                                                    MacroConfig.getFullRestartCommand(), 0));
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                        MacroWorkerThread.getInstance().submit("PlotTpRewarp", () -> {
+                            client.execute(() -> com.ihanuat.mod.util.CommandUtils.stopScript(client, 0));
+                            MacroWorkerThread.sleep(300);
+                            client.execute(() -> MacroConfig.executePlotTpRewarp(client));
+                            MacroWorkerThread.sleep(1200); // Wait for warp
+                            if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
+                                client.execute(
+                                        () -> com.ihanuat.mod.util.CommandUtils.startScript(client,
+                                                MacroConfig.getFullRestartCommand(), 0));
                             }
-                        }).start();
+                        });
                     }
                 }
             }
