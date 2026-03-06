@@ -9,9 +9,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class MacroConfig {
-    public enum GearSwapMode {
-        NONE, WARDROBE, ROD, ROD_2X
-    }
+    // GearSwapMode enum removed and replaced by boolean toggles for better
+    // decoupling.
 
     public enum PetRarity {
         COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC
@@ -28,7 +27,11 @@ public class MacroConfig {
     public static final int DEFAULT_PEST_THRESHOLD = 5;
     public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = true;
     public static final int DEFAULT_VISITOR_THRESHOLD = 5;
-    public static final GearSwapMode DEFAULT_GEAR_SWAP_MODE = GearSwapMode.NONE;
+    public static final boolean DEFAULT_AUTO_WARDROBE_PEST = true;
+    public static final boolean DEFAULT_AUTO_WARDROBE_VISITOR = false;
+    public static final boolean DEFAULT_AUTO_ROD_PEST_CD = false;
+    public static final boolean DEFAULT_AUTO_ROD_PEST_SPAWN = false;
+    public static final boolean DEFAULT_AUTO_ROD_RETURN_TO_FARM = false;
     public static final UnflyMode DEFAULT_UNFLY_MODE = UnflyMode.DOUBLE_TAP_SPACE;
     public static final DelayMode DEFAULT_DELAY_MODE = DelayMode.LEGACY;
     public static final boolean DEFAULT_AUTO_VISITOR = true;
@@ -107,7 +110,11 @@ public class MacroConfig {
     public static boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
     public static int pestChatTriggerDelay = DEFAULT_PEST_CHAT_TRIGGER_DELAY;
     public static int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
-    public static GearSwapMode gearSwapMode = DEFAULT_GEAR_SWAP_MODE;
+    public static boolean autoWardrobePest = DEFAULT_AUTO_WARDROBE_PEST;
+    public static boolean autoWardrobeVisitor = DEFAULT_AUTO_WARDROBE_VISITOR;
+    public static boolean autoRodPestCd = DEFAULT_AUTO_ROD_PEST_CD;
+    public static boolean autoRodPestSpawn = DEFAULT_AUTO_ROD_PEST_SPAWN;
+    public static boolean autoRodReturnToFarm = DEFAULT_AUTO_ROD_RETURN_TO_FARM;
     public static UnflyMode unflyMode = DEFAULT_UNFLY_MODE;
     public static DelayMode delayMode = DEFAULT_DELAY_MODE;
     public static boolean autoVisitor = DEFAULT_AUTO_VISITOR;
@@ -129,7 +136,6 @@ public class MacroConfig {
     public static int wardrobeSlotFarming = DEFAULT_WARDROBE_SLOT_FARMING;
     public static int wardrobeSlotPest = DEFAULT_WARDROBE_SLOT_PEST;
     public static int wardrobeSlotVisitor = DEFAULT_WARDROBE_SLOT_VISITOR;
-    public static boolean armorSwapVisitor = DEFAULT_ARMOR_SWAP_VISITOR;
 
     // GUI Click Delay (ms)
     public static int guiClickDelay = DEFAULT_GUI_CLICK_DELAY;
@@ -305,7 +311,11 @@ public class MacroConfig {
         data.triggerPestOnChat = triggerPestOnChat;
         data.pestChatTriggerDelay = pestChatTriggerDelay;
         data.visitorThreshold = visitorThreshold;
-        data.gearSwapMode = gearSwapMode;
+        data.autoWardrobePest = autoWardrobePest;
+        data.autoWardrobeVisitor = autoWardrobeVisitor;
+        data.autoRodPestCd = autoRodPestCd;
+        data.autoRodPestSpawn = autoRodPestSpawn;
+        data.autoRodReturnToFarm = autoRodReturnToFarm;
         data.unflyMode = unflyMode;
         data.delayMode = delayMode;
         data.autoVisitor = autoVisitor;
@@ -325,7 +335,6 @@ public class MacroConfig {
         data.wardrobeSlotFarming = wardrobeSlotFarming;
         data.wardrobeSlotPest = wardrobeSlotPest;
         data.wardrobeSlotVisitor = wardrobeSlotVisitor;
-        data.armorSwapVisitor = armorSwapVisitor;
         data.guiClickDelay = guiClickDelay;
         data.equipmentSwapDelay = equipmentSwapDelay;
         data.rodSwapDelay = rodSwapDelay;
@@ -399,7 +408,11 @@ public class MacroConfig {
                 triggerPestOnChat = data.triggerPestOnChat;
                 pestChatTriggerDelay = data.pestChatTriggerDelay;
                 visitorThreshold = data.visitorThreshold;
-                gearSwapMode = data.gearSwapMode != null ? data.gearSwapMode : DEFAULT_GEAR_SWAP_MODE;
+                autoWardrobePest = data.autoWardrobePest;
+                autoWardrobeVisitor = data.autoWardrobeVisitor;
+                autoRodPestCd = data.autoRodPestCd;
+                autoRodPestSpawn = data.autoRodPestSpawn;
+                autoRodReturnToFarm = data.autoRodReturnToFarm;
                 unflyMode = data.unflyMode != null ? data.unflyMode : DEFAULT_UNFLY_MODE;
                 delayMode = data.delayMode != null ? data.delayMode : DEFAULT_DELAY_MODE;
                 autoVisitor = data.autoVisitor;
@@ -425,7 +438,6 @@ public class MacroConfig {
                 wardrobeSlotFarming = data.wardrobeSlotFarming;
                 wardrobeSlotPest = data.wardrobeSlotPest;
                 wardrobeSlotVisitor = data.wardrobeSlotVisitor;
-                armorSwapVisitor = data.armorSwapVisitor;
                 guiClickDelay = data.guiClickDelay;
                 equipmentSwapDelay = data.equipmentSwapDelay;
                 rodSwapDelay = data.rodSwapDelay;
@@ -499,7 +511,11 @@ public class MacroConfig {
         boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
         int pestChatTriggerDelay = DEFAULT_PEST_CHAT_TRIGGER_DELAY;
         int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;
-        GearSwapMode gearSwapMode = DEFAULT_GEAR_SWAP_MODE;
+        boolean autoWardrobePest = DEFAULT_AUTO_WARDROBE_PEST;
+        boolean autoWardrobeVisitor = DEFAULT_AUTO_WARDROBE_VISITOR;
+        boolean autoRodPestCd = DEFAULT_AUTO_ROD_PEST_CD;
+        boolean autoRodPestSpawn = DEFAULT_AUTO_ROD_PEST_SPAWN;
+        boolean autoRodReturnToFarm = DEFAULT_AUTO_ROD_RETURN_TO_FARM;
         UnflyMode unflyMode = DEFAULT_UNFLY_MODE;
         DelayMode delayMode = DEFAULT_DELAY_MODE;
         boolean autoVisitor = DEFAULT_AUTO_VISITOR;
@@ -519,7 +535,7 @@ public class MacroConfig {
         int wardrobeSlotFarming = DEFAULT_WARDROBE_SLOT_FARMING;
         int wardrobeSlotPest = DEFAULT_WARDROBE_SLOT_PEST;
         int wardrobeSlotVisitor = DEFAULT_WARDROBE_SLOT_VISITOR;
-        boolean armorSwapVisitor = DEFAULT_ARMOR_SWAP_VISITOR;
+
         int guiClickDelay = DEFAULT_GUI_CLICK_DELAY;
         int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
         int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;

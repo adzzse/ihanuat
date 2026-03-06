@@ -214,7 +214,7 @@ public class PestManager {
 
                     GearManager.swapToFarmingToolSync(client);
 
-                    if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
+                    if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotVisitor > 0
                             && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                         client.player.displayClientMessage(Component.literal(
                                 "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor
@@ -304,7 +304,7 @@ public class PestManager {
                     GearManager.swapToFarmingTool(client);
                 });
 
-                if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
+                if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotVisitor > 0
                         && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                     client.player.displayClientMessage(Component.literal(
                             "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."),
@@ -343,8 +343,8 @@ public class PestManager {
             }
 
             GearManager.swapToFarmingToolSync(client);
-            if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD_2X) {
-                ClientUtils.sendDebugMessage(client, "ROD 2X: Triggering second rod cast (PestManager)...");
+            if (MacroConfig.autoRodReturnToFarm) {
+                ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering second rod cast (PestManager)...");
                 GearManager.executeRodSequence(client);
             }
 
@@ -397,7 +397,7 @@ public class PestManager {
                 }
 
                 // 1. Wardrobe (Synchronous wait)
-                if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE && MacroConfig.wardrobeSlotPest > 0) {
+                if (MacroConfig.autoWardrobePest && MacroConfig.wardrobeSlotPest > 0) {
                     ClientUtils.sendDebugMessage(client,
                             "Prep-swap: Initiating wardrobe swap to slot " + MacroConfig.wardrobeSlotPest);
                     GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotPest);
@@ -500,8 +500,7 @@ public class PestManager {
                 }
 
                 // 3. Rod Sequence (Wait for previous steps confirmed by GearManager checks)
-                if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD
-                        || MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD_2X) {
+                if (MacroConfig.autoRodPestCd) {
                     GearManager.executeRodSequence(client);
                 }
 
@@ -538,7 +537,7 @@ public class PestManager {
                     return;
 
                 // 1. Gear Restoration
-                if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.WARDROBE) {
+                if (MacroConfig.autoWardrobePest) {
                     int targetSlot = MacroConfig.wardrobeSlotFarming;
                     if ((prepSwappedForCurrentPestCycle || GearManager.trackedWardrobeSlot != targetSlot)
                             && targetSlot > 0) {
@@ -654,6 +653,10 @@ public class PestManager {
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 50);
                 GearManager.swapToFarmingToolSync(client);
                 ClientUtils.sendDebugMessage(client, "Starting pest cleaner script for plot " + currentInfestedPlot);
+                if (MacroConfig.autoRodPestSpawn) {
+                    ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn.");
+                    GearManager.executeRodSequence(client);
+                }
                 com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
 
             } catch (Exception e) {

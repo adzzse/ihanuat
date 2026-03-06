@@ -93,7 +93,7 @@ public class VisitorManager {
             } catch (InterruptedException ignored) {
             }
 
-            if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotVisitor > 0
+            if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotVisitor > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                 client.player.displayClientMessage(Component.literal(
                         "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."), true);
@@ -129,7 +129,7 @@ public class VisitorManager {
         } catch (InterruptedException ignored) {
         }
 
-        if (MacroConfig.armorSwapVisitor && MacroConfig.wardrobeSlotFarming > 0
+        if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotFarming > 0
                 && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
             client.player.displayClientMessage(Component.literal(
                     "\u00A7eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
@@ -139,8 +139,8 @@ public class VisitorManager {
 
         ClientUtils.waitForGearAndGui(client);
 
-        if (MacroConfig.gearSwapMode == MacroConfig.GearSwapMode.ROD_2X) {
-            ClientUtils.sendDebugMessage(client, "ROD 2X: Triggering second rod cast (VisitorManager)...");
+        if (MacroConfig.autoRodReturnToFarm) {
+            ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering second rod cast (VisitorManager)...");
             GearManager.executeRodSequence(client);
         }
 
