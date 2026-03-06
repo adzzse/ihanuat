@@ -3,6 +3,7 @@ package com.ihanuat.mod.modules;
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
@@ -73,7 +74,7 @@ public class VisitorManager {
     public static void handleVisitorScriptFinished(Minecraft client) {
         client.player.displayClientMessage(Component.literal("\u00A7aVisitor sequence complete. Returning to farm..."),
                 true);
-        new Thread(() -> {
+        MacroWorkerThread.getInstance().submit("VisitorFinished-ReturnToFarm", () -> {
             try {
                 ClientUtils.sendDebugMessage(client, "Warping to garden...");
                 com.ihanuat.mod.util.CommandUtils.warpGarden(client);
@@ -83,7 +84,7 @@ public class VisitorManager {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 
     public static void finalizeReturnToFarm(Minecraft client) {
@@ -100,10 +101,7 @@ public class VisitorManager {
             client.execute(() -> {
                 GearManager.swapToFarmingTool(client);
             });
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException ignored) {
-            }
+            MacroWorkerThread.sleep(250);
 
             if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotVisitor > 0
                     && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
@@ -111,15 +109,12 @@ public class VisitorManager {
                         "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."), true);
                 GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor);
                 if (GearManager.isSwappingWardrobe) {
-                    try {
-                        ClientUtils.waitForWardrobeGui(client);
-                        while (GearManager.isSwappingWardrobe)
-                            Thread.sleep(50);
-                        while (GearManager.wardrobeCleanupTicks > 0)
-                            Thread.sleep(50);
-                        Thread.sleep(250);
-                    } catch (InterruptedException ignored) {
-                    }
+                    ClientUtils.waitForWardrobeGui(client);
+                    while (GearManager.isSwappingWardrobe)
+                        MacroWorkerThread.sleep(50);
+                    while (GearManager.wardrobeCleanupTicks > 0)
+                        MacroWorkerThread.sleep(50);
+                    MacroWorkerThread.sleep(250);
                 }
             }
             ClientUtils.waitForGearAndGui(client);
@@ -136,10 +131,7 @@ public class VisitorManager {
         client.execute(() -> {
             GearManager.swapToFarmingTool(client);
         });
-        try {
-            Thread.sleep(250);
-        } catch (InterruptedException ignored) {
-        }
+        MacroWorkerThread.sleep(250);
 
         if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotFarming > 0
                 && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
@@ -147,19 +139,16 @@ public class VisitorManager {
                     "\u00A7eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
             GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming);
             if (GearManager.isSwappingWardrobe) {
-                try {
-                    ClientUtils.sendDebugMessage(client, "finalizeReturnToFarm: Waiting for wardrobe GUI...");
-                    ClientUtils.waitForWardrobeGui(client);
-                    ClientUtils.sendDebugMessage(client,
-                            "finalizeReturnToFarm: Wardrobe GUI detected, waiting for swap to complete...");
-                    while (GearManager.isSwappingWardrobe)
-                        Thread.sleep(50);
-                    while (GearManager.wardrobeCleanupTicks > 0)
-                        Thread.sleep(50);
-                    Thread.sleep(350);
-                    ClientUtils.sendDebugMessage(client, "finalizeReturnToFarm: Wardrobe swap fully complete.");
-                } catch (InterruptedException ignored) {
-                }
+                ClientUtils.sendDebugMessage(client, "finalizeReturnToFarm: Waiting for wardrobe GUI...");
+                ClientUtils.waitForWardrobeGui(client);
+                ClientUtils.sendDebugMessage(client,
+                        "finalizeReturnToFarm: Wardrobe GUI detected, waiting for swap to complete...");
+                while (GearManager.isSwappingWardrobe)
+                    MacroWorkerThread.sleep(50);
+                while (GearManager.wardrobeCleanupTicks > 0)
+                    MacroWorkerThread.sleep(50);
+                MacroWorkerThread.sleep(350);
+                ClientUtils.sendDebugMessage(client, "finalizeReturnToFarm: Wardrobe swap fully complete.");
             }
         }
 

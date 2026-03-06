@@ -2,6 +2,7 @@ package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -194,14 +195,14 @@ public class BookCombineManager {
         isPreparingToCombine = true;
         isCombining = false;
 
-        new Thread(() -> {
+        MacroWorkerThread.getInstance().submit("BookCombine-Trigger", () -> {
             try {
                 ClientUtils.sendDebugMessage(client, "Stopping script: Preparing book combine");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
 
                 boolean success = true;
                 for (int i = 0; i < 50; i++) {
-                    Thread.sleep(100);
+                    MacroWorkerThread.sleep(100);
                     if (!isPreparingToCombine) {
                         success = false;
                         break;
@@ -225,7 +226,7 @@ public class BookCombineManager {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 
     private static void finishCombining(Minecraft client) {
@@ -240,22 +241,20 @@ public class BookCombineManager {
         }
 
         if (com.ihanuat.mod.MacroStateManager.getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
-            new Thread(() -> {
-                try {
-                    // Wait for GUI to fully close
-                    long guiWait = System.currentTimeMillis();
-                    while (client.screen != null && System.currentTimeMillis() - guiWait < 3000)
-                        Thread.sleep(50);
-                    Thread.sleep(300);
+            MacroWorkerThread.getInstance().submit("BookCombine-Finish", () -> {
+                // Wait for GUI to fully close
+                long guiWait = System.currentTimeMillis();
+                while (client.screen != null && System.currentTimeMillis() - guiWait < 3000)
+                    MacroWorkerThread.sleep(50);
+                MacroWorkerThread.sleep(300);
 
-                    client.execute(() -> GearManager.swapToFarmingTool(client));
-                    Thread.sleep(200);
+                client.execute(() -> GearManager.swapToFarmingTool(client));
+                MacroWorkerThread.sleep(200);
 
-                    ClientUtils.sendDebugMessage(client, "Starting farming script after book combine: " + MacroConfig.getFullRestartCommand());
-                    com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
-                } catch (Exception ignored) {
-                }
-            }).start();
+                ClientUtils.sendDebugMessage(client,
+                        "Starting farming script after book combine: " + MacroConfig.getFullRestartCommand());
+                com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
+            });
         }
     }
 

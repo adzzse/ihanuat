@@ -3,6 +3,7 @@ package com.ihanuat.mod.modules;
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -125,23 +126,23 @@ public class JunkManager {
         isPreparingToDrop = true;
         isDropping = false;
 
-        new Thread(() -> {
+        MacroWorkerThread.getInstance().submit("JunkDrop-Trigger", () -> {
             try {
-                Thread.sleep(3000);
+                MacroWorkerThread.sleep(3000);
 
                 if (!isPreparingToDrop)
                     return;
 
                 ClientUtils.sendDebugMessage(client, "Stopping script: Preparing to drop junk");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
-                Thread.sleep(400); // Small safety delay after stop
+                MacroWorkerThread.sleep(400); // Small safety delay after stop
 
                 // /setspawn before warping
                 com.ihanuat.mod.util.CommandUtils.setSpawn(client);
 
                 // /plottp
                 com.ihanuat.mod.util.CommandUtils.plotTp(client, MacroConfig.dropJunkPlotTp);
-                Thread.sleep(250);
+                MacroWorkerThread.sleep(250);
 
                 if (!isPreparingToDrop)
                     return;
@@ -158,7 +159,7 @@ public class JunkManager {
                 isPreparingToDrop = false;
                 isDropping = false;
             }
-        }).start();
+        });
     }
 
     public static void handleInventoryMenu(Minecraft client, AbstractContainerScreen<?> screen) {
@@ -206,21 +207,22 @@ public class JunkManager {
         isDropping = false;
         client.player.displayClientMessage(Component.literal("§aJunk Drop finished. Resuming script..."), true);
 
-        new Thread(() -> {
+        MacroWorkerThread.getInstance().submit("JunkDrop-Finish", () -> {
             try {
                 com.ihanuat.mod.util.CommandUtils.warpGarden(client);
-                Thread.sleep(250);
+                MacroWorkerThread.sleep(250);
 
                 ClientUtils.waitForGearAndGui(client);
                 if (MacroStateManager.getCurrentState() == MacroState.State.FARMING) {
                     client.execute(() -> {
                         GearManager.swapToFarmingTool(client);
-                        ClientUtils.sendDebugMessage(client, "Starting farming script after junk drop: " + MacroConfig.getFullRestartCommand());
+                        ClientUtils.sendDebugMessage(client,
+                                "Starting farming script after junk drop: " + MacroConfig.getFullRestartCommand());
                         com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
                     });
                 }
             } catch (Exception ignored) {
             }
-        }).start();
+        });
     }
 }
