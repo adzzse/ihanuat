@@ -1,10 +1,15 @@
 package com.ihanuat.mod.modules;
 
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -12,15 +17,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class VisitorManager {
     private static final Pattern VISITORS_PATTERN = Pattern.compile("Visitors:\\s*\\(?(\\d+)\\)?");
+    private static final long VISITOR_REENTRY_COOLDOWN_MS = 3L * 60L * 1000L;
 
     private static VisitorOffer pendingOffer = null;
+    private static volatile long visitorReentryCooldownUntilMs = 0L;
 
     // ── Inner Data Classes ──
 
@@ -72,13 +74,18 @@ public class VisitorManager {
     }
 
     public static void handleVisitorScriptFinished(Minecraft client) {
+        startVisitorReentryCooldown(client);
         client.player.displayClientMessage(Component.literal("\u00A7aVisitor sequence complete. Returning to farm..."),
                 true);
         MacroWorkerThread.getInstance().submit("VisitorFinished-ReturnToFarm", () -> {
             try {
+                if (MacroWorkerThread.shouldAbortTask(client))
+                    return;
                 ClientUtils.sendDebugMessage(client, "Warping to garden...");
                 com.ihanuat.mod.util.CommandUtils.warpGarden(client);
-                PestManager.isReturningFromPestVisitor = true;
+                PestReturnManager.isReturningFromPestVisitor = true;
+                if (MacroWorkerThread.shouldAbortTask(client))
+                    return;
                 ClientUtils.sendDebugMessage(client, "Finalizing return to farm...");
                 finalizeReturnToFarm(client);
             } catch (Exception e) {
@@ -88,13 +95,15 @@ public class VisitorManager {
     }
 
     public static void finalizeReturnToFarm(Minecraft client) {
+        if (MacroWorkerThread.shouldAbortTask(client))
+            return;
         ClientUtils.sendDebugMessage(client,
                 "finalizeReturnToFarm triggered. State: " + MacroStateManager.getCurrentState());
         if (MacroStateManager.getCurrentState() == MacroState.State.OFF)
             return;
 
         int visitors = getVisitorCount(client);
-        if (visitors >= MacroConfig.visitorThreshold) {
+        if (visitors >= MacroConfig.visitorThreshold && !isVisitorReentryCooldownActive(client, true)) {
             client.player.displayClientMessage(
                     Component.literal("\u00A7dVisitor Threshold Met (" + visitors + "). Redirecting to Visitors..."),
                     true);
@@ -104,15 +113,15 @@ public class VisitorManager {
             MacroWorkerThread.sleep(250);
 
             if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotVisitor > 0
-                    && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
+                    && WardrobeManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotVisitor) {
                 client.player.displayClientMessage(Component.literal(
                         "\u00A7eSwapping to Visitor Wardrobe (Slot " + MacroConfig.wardrobeSlotVisitor + ")..."), true);
                 GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotVisitor);
-                if (GearManager.isSwappingWardrobe) {
+                if (WardrobeManager.isSwappingWardrobe) {
                     ClientUtils.waitForWardrobeGui(client);
-                    while (GearManager.isSwappingWardrobe)
+                    while (WardrobeManager.isSwappingWardrobe)
                         MacroWorkerThread.sleep(50);
-                    while (GearManager.wardrobeCleanupTicks > 0)
+                    while (WardrobeManager.wardrobeCleanupTicks > 0)
                         MacroWorkerThread.sleep(50);
                     MacroWorkerThread.sleep(250);
                 }
@@ -128,24 +137,29 @@ public class VisitorManager {
             return;
         }
 
+        if (visitors >= MacroConfig.visitorThreshold) {
+            ClientUtils.sendDebugMessage(client,
+                    "Visitor threshold met, but re-entry cooldown is active. Continuing farming.");
+        }
+
         client.execute(() -> {
             GearManager.swapToFarmingTool(client);
         });
         MacroWorkerThread.sleep(250);
 
         if (MacroConfig.autoWardrobeVisitor && MacroConfig.wardrobeSlotFarming > 0
-                && GearManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
+                && WardrobeManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
             client.player.displayClientMessage(Component.literal(
                     "\u00A7eRestoring Farming Wardrobe (Slot " + MacroConfig.wardrobeSlotFarming + ")..."), true);
             GearManager.ensureWardrobeSlot(client, MacroConfig.wardrobeSlotFarming);
-            if (GearManager.isSwappingWardrobe) {
+            if (WardrobeManager.isSwappingWardrobe) {
                 ClientUtils.sendDebugMessage(client, "finalizeReturnToFarm: Waiting for wardrobe GUI...");
                 ClientUtils.waitForWardrobeGui(client);
                 ClientUtils.sendDebugMessage(client,
                         "finalizeReturnToFarm: Wardrobe GUI detected, waiting for swap to complete...");
-                while (GearManager.isSwappingWardrobe)
+                while (WardrobeManager.isSwappingWardrobe)
                     MacroWorkerThread.sleep(50);
-                while (GearManager.wardrobeCleanupTicks > 0)
+                while (WardrobeManager.wardrobeCleanupTicks > 0)
                     MacroWorkerThread.sleep(50);
                 MacroWorkerThread.sleep(350);
                 ClientUtils.sendDebugMessage(client, "finalizeReturnToFarm: Wardrobe swap fully complete.");
@@ -156,7 +170,7 @@ public class VisitorManager {
 
         if (MacroConfig.autoRodReturnToFarm) {
             ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering second rod cast (VisitorManager)...");
-            GearManager.executeRodSequence(client);
+            RodManager.executeRodSequence(client);
         }
 
         client.player.displayClientMessage(Component.literal("\u00A7aRestarting farming script..."),
@@ -167,7 +181,7 @@ public class VisitorManager {
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
         ClientUtils.sendDebugMessage(client, "Starting farming script: " + MacroConfig.getFullRestartCommand());
         com.ihanuat.mod.util.CommandUtils.startScript(client, MacroConfig.getFullRestartCommand(), 0);
-        PestManager.prepSwappedForCurrentPestCycle = false;
+        PestPrepSwapManager.prepSwappedForCurrentPestCycle = false;
         PestManager.isCleaningInProgress = false;
     }
 
@@ -319,5 +333,28 @@ public class VisitorManager {
 
     public static void clearPendingOffer() {
         pendingOffer = null;
+    }
+
+    public static void startVisitorReentryCooldown(Minecraft client) {
+        visitorReentryCooldownUntilMs = System.currentTimeMillis() + VISITOR_REENTRY_COOLDOWN_MS;
+        ClientUtils.sendDebugMessage(client, "Visitor re-entry cooldown started (3 minutes).");
+    }
+
+    public static boolean isVisitorReentryCooldownActive(Minecraft client, boolean showMessage) {
+        long now = System.currentTimeMillis();
+        long remainingMs = visitorReentryCooldownUntilMs - now;
+        if (remainingMs <= 0) {
+            return false;
+        }
+
+        long remainingSeconds = (remainingMs + 999L) / 1000L;
+        ClientUtils.sendDebugMessage(client,
+                "Visitor re-entry cooldown active (" + remainingSeconds + "s remaining). Skipping visitor macro.");
+        if (showMessage && client.player != null) {
+            client.player.displayClientMessage(
+                    Component.literal("\u00A7eVisitor cooldown active (" + remainingSeconds + "s). Staying on farm."),
+                    true);
+        }
+        return true;
     }
 }

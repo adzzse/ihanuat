@@ -106,6 +106,14 @@ public class MacroStateManager {
 
     public static void stopMacro(Minecraft client) {
         setCurrentState(MacroState.State.OFF);
+        MacroWorkerThread.getInstance().cancelCurrent();
+        if (client != null) {
+            client.execute(() -> {
+                if (client.screen != null) {
+                    client.setScreen(null);
+                }
+            });
+        }
         ClientUtils.forceReleaseKeys(client);
         ClientUtils.sendDebugMessage(client, "Stopping script: Macro stopped by user");
         com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);

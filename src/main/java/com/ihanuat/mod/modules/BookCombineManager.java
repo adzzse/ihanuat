@@ -1,7 +1,6 @@
 package com.ihanuat.mod.modules;
 
 import com.ihanuat.mod.MacroConfig;
-import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 import net.minecraft.client.Minecraft;
@@ -140,7 +139,7 @@ public class BookCombineManager {
 
         if (isPreparingToCombine) {
             if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING
-                    || PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle
+                    || PestManager.isCleaningInProgress || PestPrepSwapManager.prepSwappedForCurrentPestCycle
                     || VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
                 isPreparingToCombine = false;
                 client.player.displayClientMessage(
@@ -151,7 +150,7 @@ public class BookCombineManager {
 
         if (isCombining) {
             if (com.ihanuat.mod.MacroStateManager.getCurrentState() != com.ihanuat.mod.MacroState.State.FARMING
-                    || PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle
+                    || PestManager.isCleaningInProgress || PestPrepSwapManager.prepSwappedForCurrentPestCycle
                     || VisitorManager.getVisitorCount(client) >= MacroConfig.visitorThreshold) {
                 isCombining = false;
                 client.player.displayClientMessage(
@@ -169,8 +168,8 @@ public class BookCombineManager {
             return;
         }
 
-        if (GearManager.isSwappingWardrobe || GearManager.isSwappingEquipment ||
-                PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle ||
+        if (WardrobeManager.isSwappingWardrobe || EquipmentManager.isSwappingEquipment ||
+                PestManager.isCleaningInProgress || PestPrepSwapManager.prepSwappedForCurrentPestCycle ||
                 GeorgeManager.isSelling || GeorgeManager.isPreparingToSell ||
                 JunkManager.isDropping || JunkManager.isPreparingToDrop ||
                 (JunkManager.countJunkItems(client) >= MacroConfig.junkThreshold))
@@ -197,12 +196,20 @@ public class BookCombineManager {
 
         MacroWorkerThread.getInstance().submit("BookCombine-Trigger", () -> {
             try {
+                if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING)) {
+                    isPreparingToCombine = false;
+                    return;
+                }
                 ClientUtils.sendDebugMessage(client, "Stopping script: Preparing book combine");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
 
                 boolean success = true;
                 for (int i = 0; i < 50; i++) {
                     MacroWorkerThread.sleep(100);
+                    if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING)) {
+                        success = false;
+                        break;
+                    }
                     if (!isPreparingToCombine) {
                         success = false;
                         break;
@@ -242,14 +249,20 @@ public class BookCombineManager {
 
         if (com.ihanuat.mod.MacroStateManager.getCurrentState() == com.ihanuat.mod.MacroState.State.FARMING) {
             MacroWorkerThread.getInstance().submit("BookCombine-Finish", () -> {
+                if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING))
+                    return;
                 // Wait for GUI to fully close
                 long guiWait = System.currentTimeMillis();
                 while (client.screen != null && System.currentTimeMillis() - guiWait < 3000)
                     MacroWorkerThread.sleep(50);
                 MacroWorkerThread.sleep(300);
+                if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING))
+                    return;
 
                 client.execute(() -> GearManager.swapToFarmingTool(client));
                 MacroWorkerThread.sleep(200);
+                if (MacroWorkerThread.shouldAbortTask(client, com.ihanuat.mod.MacroState.State.FARMING))
+                    return;
 
                 ClientUtils.sendDebugMessage(client,
                         "Starting farming script after book combine: " + MacroConfig.getFullRestartCommand());

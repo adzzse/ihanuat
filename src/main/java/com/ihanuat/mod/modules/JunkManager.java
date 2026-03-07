@@ -32,7 +32,7 @@ public class JunkManager {
 
         if (isPreparingToDrop) {
             if (MacroStateManager.getCurrentState() != MacroState.State.FARMING ||
-                    PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle) {
+                    PestManager.isCleaningInProgress || PestPrepSwapManager.prepSwappedForCurrentPestCycle) {
                 isPreparingToDrop = false;
                 client.player.displayClientMessage(
                         Component.literal("§c[Ihanuat] Aborting Junk Drop prep due to priority event."), false);
@@ -42,7 +42,7 @@ public class JunkManager {
 
         if (isDropping) {
             if (MacroStateManager.getCurrentState() != MacroState.State.FARMING ||
-                    PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle) {
+                    PestManager.isCleaningInProgress || PestPrepSwapManager.prepSwappedForCurrentPestCycle) {
                 isDropping = false;
                 client.player.displayClientMessage(
                         Component.literal("§c[Ihanuat] Aborting Junk Drop due to priority event."), false);
@@ -66,8 +66,8 @@ public class JunkManager {
             return;
 
         // Don't trigger if busy
-        if (GearManager.isSwappingWardrobe || GearManager.isSwappingEquipment ||
-                PestManager.isCleaningInProgress || PestManager.prepSwappedForCurrentPestCycle)
+        if (WardrobeManager.isSwappingWardrobe || EquipmentManager.isSwappingEquipment ||
+                PestManager.isCleaningInProgress || PestPrepSwapManager.prepSwappedForCurrentPestCycle)
             return;
 
         int junkCount = countJunkItems(client);
