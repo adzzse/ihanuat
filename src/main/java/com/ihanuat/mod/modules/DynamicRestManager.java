@@ -1,23 +1,23 @@
 package com.ihanuat.mod.modules;
 
+import java.util.Random;
+
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.ReconnectScheduler;
-import com.ihanuat.mod.util.ClientUtils;
-import net.minecraft.client.Minecraft;
 import com.ihanuat.mod.gui.DynamicRestScreen;
-import net.minecraft.network.chat.Component;
+import com.ihanuat.mod.util.ClientUtils;
 
-import java.util.Random;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 /**
  * Implements the Dynamic Rest feature.
  *
  * Flow:
- * 1. Timer counts down while the macro is running (same pause/resume behavior as
- * the session timer).
- * 2. When the timer expires, a staged shutdown is queued and waits for FARMING:
+ * 1. Timer counts down only while in FARMING state.
+ * 2. When the timer expires, a staged shutdown begins (still gated on FARMING):
  * Stage 0 — send /setspawn, stop the macro script, force-release keys.
  * Stage 1 — disconnect from the server (intentional) and schedule reconnect
  * via ReconnectScheduler for the configured break duration.
@@ -40,6 +40,7 @@ public class DynamicRestManager {
     private static boolean restSequencePending = false;
     private static int restSequenceStage = 0;
     private static long nextStageActionTime = 0;
+    private static long lastTimeUpdate = 0;
 
     // ── Public API ───────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ public class DynamicRestManager {
         long randomOffsetMs = (offsetMs > 0) ? (long) (new Random().nextDouble() * offsetMs) : 0;
         scheduledDurationMs = baseMs + randomOffsetMs;
         nextRestTriggerMs = System.currentTimeMillis() + scheduledDurationMs;
+        lastTimeUpdate = System.currentTimeMillis();
         restSequencePending = false;
         restSequenceStage = 0;
         nextStageActionTime = 0;
@@ -71,6 +73,7 @@ public class DynamicRestManager {
         restSequencePending = false;
         restSequenceStage = 0;
         nextStageActionTime = 0;
+        lastTimeUpdate = 0;
     }
 
     /** Returns true while a rest sequence is actively in progress. */
@@ -103,30 +106,31 @@ public class DynamicRestManager {
 
         MacroState.State currentState = MacroStateManager.getCurrentState();
         boolean isFarming = currentState == MacroState.State.FARMING;
-        boolean isMacroTimerRunning = currentState != MacroState.State.OFF
-                && currentState != MacroState.State.RECOVERING;
         long now = System.currentTimeMillis();
 
         // === Timer Logic ===
         if (nextRestTriggerMs > 0 && !restSequencePending) {
-            // Match session timer semantics: count while macro is running and pause when OFF/RECOVERING.
-            if (isMacroTimerRunning && now >= nextRestTriggerMs) {
-                restSequencePending = true;
-                restSequenceStage = 0;
-                nextStageActionTime = now;
-                if (client.player != null) {
-                    if (isFarming) {
+            if (isFarming) {
+                if (now >= nextRestTriggerMs) {
+                    restSequencePending = true;
+                    restSequenceStage = 0;
+                    nextStageActionTime = now;
+                    if (client.player != null) {
                         client.player.displayClientMessage(
                                 Component.literal("§6[Ihanuat] Dynamic Rest triggered! Starting shutdown sequence..."),
                                 false);
-                    } else {
-                        client.player.displayClientMessage(
-                                Component.literal(
-                                        "§6[Ihanuat] Dynamic Rest queued. It will trigger once farming resumes."),
-                                false);
+                    }
+                }
+            } else {
+                // Pause countdown when not farming by moving trigger forward by the elapsed gap.
+                if (lastTimeUpdate != 0) {
+                    long gap = now - lastTimeUpdate;
+                    if (gap > 0) {
+                        nextRestTriggerMs += gap;
                     }
                 }
             }
+            lastTimeUpdate = now;
         }
 
         // === Shutdown sequence — runs once pending and in Farming state ===
