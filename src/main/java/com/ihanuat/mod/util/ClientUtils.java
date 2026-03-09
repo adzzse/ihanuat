@@ -350,8 +350,22 @@ public class ClientUtils {
     public static void waitForWardrobeGui(Minecraft client) {
         try {
             long start = System.currentTimeMillis();
+            long lastRetry = start;
+            int retryCount = 0;
             while (!com.ihanuat.mod.modules.WardrobeManager.wardrobeGuiDetected
                     && System.currentTimeMillis() - start < 5000) {
+                if (!com.ihanuat.mod.modules.WardrobeManager.isSwappingWardrobe)
+                    return;
+
+                long now = System.currentTimeMillis();
+                if (now - lastRetry >= 500) {
+                    retryCount++;
+                    sendDebugMessage(client,
+                            "[Debug] Wardrobe GUI not detected after " + (now - start)
+                                    + "ms. Retrying /wardrobe (" + retryCount + ")");
+                    client.execute(() -> sendCommand(client, "/wardrobe"));
+                    lastRetry = now;
+                }
                 Thread.sleep(50);
             }
         } catch (InterruptedException ignored) {
