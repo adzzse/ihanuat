@@ -3,6 +3,7 @@ package com.ihanuat.mod.modules;
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroStateManager;
+import com.ihanuat.mod.util.ClientUtils;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -13,6 +14,10 @@ public class PestManager {
     public static volatile String currentInfestedPlot = null;
     public static volatile int currentPestSessionId = 0;
     private static long lastZeroPestTime = 0;
+
+    private static boolean isThresholdMet(int aliveCount) {
+        return aliveCount >= MacroConfig.pestThreshold || aliveCount >= 8;
+    }
 
     public static void reset() {
         isCleaningInProgress = false;
@@ -44,7 +49,7 @@ public class PestManager {
             PestPrepSwapManager.updatePrepSwapFlag(data.cooldownSeconds, isCleaningInProgress);
 
             // Check if prep swap should be triggered
-            boolean thresholdMet = (data.aliveCount >= MacroConfig.pestThreshold || data.aliveCount >= 8);
+            boolean thresholdMet = isThresholdMet(data.aliveCount);
             if (!thresholdMet && PestPrepSwapManager.shouldTriggerPrepSwap(
                     currentState, data.cooldownSeconds, isCleaningInProgress, PestReturnManager.isReturnToLocationActive)) {
                 PestPrepSwapManager.triggerPrepSwap(client);
@@ -76,7 +81,7 @@ public class PestManager {
             return;
 
         // Check if cleaning should be triggered
-        if (data.aliveCount >= MacroConfig.pestThreshold || data.aliveCount >= 8) {
+        if (isThresholdMet(data.aliveCount)) {
             if (data.aliveCount >= 8 && data.aliveCount < 99) {
                 client.player.displayClientMessage(Component.literal("§eMax Pests (8) reached. Starting cleaning..."),
                         true);
@@ -84,6 +89,29 @@ public class PestManager {
             String targetPlot = data.infestedPlots.isEmpty() ? "0" : data.infestedPlots.iterator().next();
             startCleaningSequence(client, targetPlot);
         }
+    }
+
+    public static boolean tryStartCleaningSequenceFromChat(Minecraft client, String requestedPlot) {
+        if (client == null || client.getConnection() == null || client.player == null || isCleaningInProgress) {
+            return false;
+        }
+
+        PestTabListParser.TabListData data = PestTabListParser.parseTabList(client);
+        if (!isThresholdMet(data.aliveCount)) {
+            if (MacroConfig.showDebug) {
+                ClientUtils.sendDebugMessage(client,
+                        "Chat pest trigger ignored: alive=" + data.aliveCount + " < threshold=" + MacroConfig.pestThreshold);
+            }
+            return false;
+        }
+
+        String targetPlot = requestedPlot;
+        if ((targetPlot == null || targetPlot.isBlank() || "0".equals(targetPlot)) && !data.infestedPlots.isEmpty()) {
+            targetPlot = data.infestedPlots.iterator().next();
+        }
+
+        startCleaningSequence(client, targetPlot);
+        return true;
     }
 
     public static void handlePestCleaningFinished(Minecraft client) {

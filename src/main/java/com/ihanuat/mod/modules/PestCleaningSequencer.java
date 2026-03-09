@@ -84,9 +84,26 @@ public class PestCleaningSequencer {
                         Component.literal("§eRestoring Farming Wardrobe (Slot " + targetSlot + ") for Vacuuming..."),
                         true);
                 client.execute(() -> GearManager.ensureWardrobeSlot(client, targetSlot));
+
+                // client.execute is async; wait for swap state to actually start so later waits are not skipped.
+                long wardrobeStartWait = System.currentTimeMillis();
+                while (!WardrobeManager.isSwappingWardrobe && System.currentTimeMillis() - wardrobeStartWait < 2000) {
+                    if (MacroWorkerThread.shouldAbortTask(client))
+                        return false;
+                    MacroWorkerThread.sleep(25);
+                }
+
                 ClientUtils.waitForWardrobeGui(client);
-                while (WardrobeManager.isSwappingWardrobe)
+                long wardrobeFinishWait = System.currentTimeMillis();
+                while (WardrobeManager.isSwappingWardrobe && System.currentTimeMillis() - wardrobeFinishWait < 7000)
                     MacroWorkerThread.sleep(50);
+
+                if (WardrobeManager.isSwappingWardrobe) {
+                    ClientUtils.sendDebugMessage(client,
+                            "§eWardrobe swap wait timeout in cleaning sequence. Triggering failsafe completion.");
+                    WardrobeManager.forceWardrobeCompletionFailsafe(client);
+                }
+
                 while (WardrobeManager.wardrobeCleanupTicks > 0)
                     MacroWorkerThread.sleep(50);
                 MacroWorkerThread.sleep(250);
@@ -97,9 +114,25 @@ public class PestCleaningSequencer {
 
         if (MacroConfig.autoEquipment) {
             GearManager.ensureEquipment(client, true);
+
+            long equipmentStartWait = System.currentTimeMillis();
+            while (!EquipmentManager.isSwappingEquipment && System.currentTimeMillis() - equipmentStartWait < 2000) {
+                if (MacroWorkerThread.shouldAbortTask(client))
+                    return false;
+                MacroWorkerThread.sleep(25);
+            }
+
             ClientUtils.waitForEquipmentGui(client);
-            while (EquipmentManager.isSwappingEquipment)
+            long equipmentFinishWait = System.currentTimeMillis();
+            while (EquipmentManager.isSwappingEquipment && System.currentTimeMillis() - equipmentFinishWait < 7000)
                 MacroWorkerThread.sleep(50);
+
+            if (EquipmentManager.isSwappingEquipment) {
+                ClientUtils.sendDebugMessage(client,
+                        "§eEquipment swap wait timeout in cleaning sequence. Resetting equipment state.");
+                EquipmentManager.resetState();
+            }
+
             MacroWorkerThread.sleep(250);
             if (MacroWorkerThread.shouldAbortTask(client))
                 return false;

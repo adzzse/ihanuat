@@ -335,7 +335,7 @@ public class IhanuatClient implements ClientModInitializer {
                                                 MacroState.State.FARMING)) {
                                             return;
                                         }
-                                        PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                                        PestManager.tryStartCleaningSequenceFromChat(Minecraft.getInstance(), plot);
                                     });
                                 } else {
                                     MacroWorkerThread.getInstance().submit("PestClean-ChatTrigger-" + plot,
@@ -344,7 +344,7 @@ public class IhanuatClient implements ClientModInitializer {
                                                         MacroState.State.FARMING)) {
                                                     return;
                                                 }
-                                                PestManager.startCleaningSequence(Minecraft.getInstance(), plot);
+                                                PestManager.tryStartCleaningSequenceFromChat(Minecraft.getInstance(), plot);
                                             });
                                 }
                             } else if (MacroConfig.showDebug) {
