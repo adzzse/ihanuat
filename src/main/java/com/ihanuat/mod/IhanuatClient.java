@@ -57,6 +57,8 @@ public class IhanuatClient implements ClientModInitializer {
 
     private static boolean isPickingUpStash = false;
     private static String lastScannedVisitorTitle = null;
+    private static long lastUnexpectedRecoveryTriggerMs = 0;
+    private static final long UNEXPECTED_RECOVERY_COOLDOWN_MS = 7000;
 
     @Override
     public void onInitializeClient() {
@@ -163,6 +165,18 @@ public class IhanuatClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) {
                 hasCheckedPersistenceOnJoin = false;
+
+                // Failsafe: if macro is still marked active during an unexpected disconnect,
+                // force RECOVERING and ensure reconnect is scheduled.
+                if (MacroStateManager.isMacroRunning()
+                        && MacroStateManager.getCurrentState() != MacroState.State.RECOVERING
+                        && !MacroStateManager.isIntentionalDisconnect()) {
+                    if (!ReconnectScheduler.isPending()) {
+                        ReconnectScheduler.scheduleReconnect(10, true);
+                    }
+                    MacroStateManager.setCurrentState(MacroState.State.RECOVERING);
+                }
+
                 if (client.screen instanceof TitleScreen || client.screen instanceof DisconnectedScreen
                         || client.screen instanceof DynamicRestScreen) {
                     long reconnectAt = RestStateManager.loadReconnectTime();
@@ -499,6 +513,30 @@ public class IhanuatClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null)
                 return;
+
+            // Failsafe: if we are in a non-farming active state but no longer in Garden,
+            // transition to recovery so macro cannot remain stuck as CLEANING/VISITING.
+            MacroState.State macroState = MacroStateManager.getCurrentState();
+            if (macroState != MacroState.State.OFF
+                    && macroState != MacroState.State.RECOVERING
+                    && macroState != MacroState.State.FARMING) {
+                MacroState.Location currentLocation = ClientUtils.getCurrentLocation(client);
+                if (currentLocation != MacroState.Location.GARDEN) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastUnexpectedRecoveryTriggerMs >= UNEXPECTED_RECOVERY_COOLDOWN_MS) {
+                        lastUnexpectedRecoveryTriggerMs = now;
+                        client.player.displayClientMessage(
+                                Component.literal(
+                                        "\u00A7c[Ihanuat] Unexpected location while " + macroState
+                                                + " (" + currentLocation + "). Starting recovery..."),
+                                false);
+                        MacroStateManager.stopMacro(client);
+                        MacroStateManager.setCurrentState(MacroState.State.RECOVERING);
+                        return;
+                    }
+                }
+            }
+
             if (client.screen instanceof PauseScreen || client.screen instanceof ChatScreen) {
                 if (MacroStateManager.isMacroRunning()) {
                     MacroStateManager.stopMacro(client);

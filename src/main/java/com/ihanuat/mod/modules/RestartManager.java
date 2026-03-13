@@ -1,9 +1,10 @@
 package com.ihanuat.mod.modules;
 
-import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.MacroState;
+import com.ihanuat.mod.MacroStateManager;
 import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -12,6 +13,26 @@ public class RestartManager {
     private static long restartExecutionTime = 0;
     private static int restartSequenceStage = 0;
     private static long nextRestartActionTime = 0;
+
+    private static boolean isSafeToRunRestartAbort(MacroState.State state) {
+        if (state == MacroState.State.OFF || state == MacroState.State.RECOVERING) {
+            return false;
+        }
+
+        // Never interrupt active pest/visitor flows; wait until they finish naturally.
+        if (PestManager.isCleaningInProgress
+                || PestPrepSwapManager.isPrepSwapping
+                || PestReturnManager.isFinishingInProgress
+                || PestReturnManager.isReturnToLocationActive
+                || PestReturnManager.isReturningFromPestVisitor
+                || state == MacroState.State.CLEANING
+                || state == MacroState.State.SPRAYING
+                || state == MacroState.State.VISITING) {
+            return false;
+        }
+
+        return state == MacroState.State.FARMING;
+    }
 
     public static void handleRestartMessage(Minecraft client) {
         if (MacroStateManager.getCurrentState() != MacroState.State.OFF
@@ -28,23 +49,27 @@ public class RestartManager {
                         "§c[Ihanuat] Server restart/evacuation detected! Initiating abort sequence..."), false);
                 restartExecutionTime = System.currentTimeMillis();
             }
-            // Cancel all queued/in-flight worker tasks immediately so e.g. AOTV stops now.
-            MacroWorkerThread.getInstance().cancelCurrent();
-            ClientUtils.forceReleaseKeys(client);
+            // Defer interruption to stage 0 so active pest/visitor flows can finish safely.
             isRestartPending = true;
             restartSequenceStage = 0;
         }
     }
 
     public static void update(Minecraft client) {
-        if (!isRestartPending || MacroStateManager.getCurrentState() != MacroState.State.FARMING)
+        if (!isRestartPending)
             return;
 
+        MacroState.State state = MacroStateManager.getCurrentState();
+
         if (restartSequenceStage == 0 && System.currentTimeMillis() >= restartExecutionTime) {
+            if (!isSafeToRunRestartAbort(state)) {
+                return;
+            }
+
             client.player.displayClientMessage(
                     Component.literal("§c[Ihanuat] Executing delayed restart abort sequence..."), false);
             ClientUtils.sendDebugMessage(client, "Stopping script: Server restart/evacuation detected");
-            // Cancel worker tasks again in case any were queued during a contest delay.
+            // Cancel worker tasks right before abort execution.
             MacroWorkerThread.getInstance().cancelCurrent();
             com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
             ClientUtils.forceReleaseKeys(client);
