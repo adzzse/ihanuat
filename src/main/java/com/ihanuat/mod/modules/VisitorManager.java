@@ -19,7 +19,7 @@ import net.minecraft.world.item.component.CustomData;
 
 public class VisitorManager {
     private static final Pattern VISITORS_PATTERN = Pattern.compile("Visitors:\\s*\\(?(\\d+)\\)?");
-    private static final long VISITOR_REENTRY_COOLDOWN_MS = 3L * 60L * 1000L;
+    private static final long VISITOR_REENTRY_COOLDOWN_MS = 60_000L;
 
     private static VisitorOffer pendingOffer = null;
     private static volatile long visitorReentryCooldownUntilMs = 0L;
@@ -337,7 +337,7 @@ public class VisitorManager {
 
     public static void startVisitorReentryCooldown(Minecraft client) {
         visitorReentryCooldownUntilMs = System.currentTimeMillis() + VISITOR_REENTRY_COOLDOWN_MS;
-        ClientUtils.sendDebugMessage(client, "Visitor re-entry cooldown started (3 minutes).");
+        ClientUtils.sendDebugMessage(client, "Visitor re-entry cooldown started (1 minute).");
     }
 
     public static boolean isVisitorReentryCooldownActive(Minecraft client, boolean showMessage) {
