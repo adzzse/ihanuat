@@ -84,6 +84,9 @@ public class MacroConfig {
     public static final int DEFAULT_JUNK_ITEM_DROP_DELAY = 300;
     public static final int DEFAULT_PEST_CHAT_TRIGGER_DELAY = 0;
     public static final boolean DEFAULT_SHOW_DEBUG = false;
+    public static final boolean DEFAULT_LOG_DEBUG_TO_FILE = false;
+    public static final boolean DEFAULT_AUTO_RECOVER_UNEXPECTED_DISCONNECT = true;
+    public static final boolean DEFAULT_AUTO_RESUME_AFTER_DYNAMIC_REST = true;
     public static final boolean DEFAULT_GUI_ONLY_IN_GARDEN = true;
     public static final boolean DEFAULT_BREAK_BLOCKS_BEFORE_AOTV = false;
     public static final boolean DEFAULT_DELAY_PEST_FOR_CROP_FEVER = false;
@@ -224,6 +227,9 @@ public class MacroConfig {
     public static int junkThreshold = DEFAULT_JUNK_THRESHOLD;
     public static int junkItemDropDelay = DEFAULT_JUNK_ITEM_DROP_DELAY;
     public static boolean showDebug = DEFAULT_SHOW_DEBUG;
+    public static boolean logDebugToFile = DEFAULT_LOG_DEBUG_TO_FILE;
+    public static boolean autoRecoverUnexpectedDisconnect = DEFAULT_AUTO_RECOVER_UNEXPECTED_DISCONNECT;
+    public static boolean autoResumeAfterDynamicRest = DEFAULT_AUTO_RESUME_AFTER_DYNAMIC_REST;
     public static boolean guiOnlyInGarden = DEFAULT_GUI_ONLY_IN_GARDEN;
     public static boolean breakBlocksBeforeAotv = DEFAULT_BREAK_BLOCKS_BEFORE_AOTV;
     public static boolean delayPestForCropFever = DEFAULT_DELAY_PEST_FOR_CROP_FEVER;
@@ -386,6 +392,9 @@ public class MacroConfig {
         data.junkThreshold = junkThreshold;
         data.junkItemDropDelay = junkItemDropDelay;
         data.showDebug = showDebug;
+        data.logDebugToFile = logDebugToFile;
+        data.autoRecoverUnexpectedDisconnect = autoRecoverUnexpectedDisconnect;
+        data.autoResumeAfterDynamicRest = autoResumeAfterDynamicRest;
         data.guiOnlyInGarden = guiOnlyInGarden;
         data.breakBlocksBeforeAotv = breakBlocksBeforeAotv;
         data.delayPestForCropFever = delayPestForCropFever;
@@ -506,6 +515,10 @@ public class MacroConfig {
                 junkThreshold = data.junkThreshold;
                 junkItemDropDelay = data.junkItemDropDelay;
                 showDebug = data.showDebug;
+                logDebugToFile = data.logDebugToFile;
+                if (!logDebugToFile) DebugLogger.getInstance().close();
+                autoRecoverUnexpectedDisconnect = data.autoRecoverUnexpectedDisconnect;
+                autoResumeAfterDynamicRest = data.autoResumeAfterDynamicRest;
                 guiOnlyInGarden = data.guiOnlyInGarden;
                 breakBlocksBeforeAotv = data.breakBlocksBeforeAotv;
                 delayPestForCropFever = data.delayPestForCropFever;
@@ -607,6 +620,9 @@ public class MacroConfig {
         int junkThreshold = DEFAULT_JUNK_THRESHOLD;
         int junkItemDropDelay = DEFAULT_JUNK_ITEM_DROP_DELAY;
         boolean showDebug = DEFAULT_SHOW_DEBUG;
+        boolean logDebugToFile = DEFAULT_LOG_DEBUG_TO_FILE;
+        boolean autoRecoverUnexpectedDisconnect = DEFAULT_AUTO_RECOVER_UNEXPECTED_DISCONNECT;
+        boolean autoResumeAfterDynamicRest = DEFAULT_AUTO_RESUME_AFTER_DYNAMIC_REST;
         boolean guiOnlyInGarden = DEFAULT_GUI_ONLY_IN_GARDEN;
         boolean breakBlocksBeforeAotv = DEFAULT_BREAK_BLOCKS_BEFORE_AOTV;
         boolean delayPestForCropFever = DEFAULT_DELAY_PEST_FOR_CROP_FEVER;
