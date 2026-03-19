@@ -566,6 +566,17 @@ public class ClickGui extends Screen {
                 else searchActive = false;
                 return;
             }
+            if (key == 32) { searchQuery += ' '; return; }
+            if ((mods & GLFW.GLFW_MOD_CONTROL) == 0) {
+                String name = GLFW.glfwGetKeyName(key, scan);
+                if (name != null && name.length() == 1) {
+                    char c = name.charAt(0);
+                    if ((mods & GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
+                    searchQuery += c;
+                    return;
+                }
+            }
+            return;
         }
         if (key == 256) onClose();
     }
