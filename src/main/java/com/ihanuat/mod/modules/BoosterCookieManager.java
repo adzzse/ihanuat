@@ -16,7 +16,7 @@ public class BoosterCookieManager {
             return;
 
         long now = System.currentTimeMillis();
-        if (now - interactionTime < MacroConfig.getRandomizedDelay(MacroConfig.guiClickDelay))
+        if (now - interactionTime < MacroConfig.getRandomizedDelay(MacroConfig.autosellClickDelay))
             return;
 
         String title = screen.getTitle().getString();

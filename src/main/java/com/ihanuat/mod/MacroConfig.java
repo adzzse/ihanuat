@@ -51,6 +51,7 @@ public class MacroConfig {
     public static final int DEFAULT_WARDROBE_SLOT_VISITOR = 3;
     public static final boolean DEFAULT_ARMOR_SWAP_VISITOR = false;
     public static final int DEFAULT_GUI_CLICK_DELAY = 500;
+    public static final int DEFAULT_AUTOSELL_CLICK_DELAY = 500;
     public static final int DEFAULT_EQUIPMENT_SWAP_DELAY = 250;
     public static final int DEFAULT_ROD_SWAP_DELAY = 100;
     public static final int DEFAULT_BOOK_COMBINE_DELAY = 300;
@@ -174,6 +175,7 @@ public class MacroConfig {
     public static int wardrobeSlotPest = DEFAULT_WARDROBE_SLOT_PEST;
     public static int wardrobeSlotVisitor = DEFAULT_WARDROBE_SLOT_VISITOR;
     public static int guiClickDelay = DEFAULT_GUI_CLICK_DELAY;
+    public static int autosellClickDelay = DEFAULT_AUTOSELL_CLICK_DELAY;
     public static int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
     public static int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
     public static int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
@@ -379,6 +381,7 @@ public class MacroConfig {
         d.wardrobeSlotPest = wardrobeSlotPest;
         d.wardrobeSlotVisitor = wardrobeSlotVisitor;
         d.guiClickDelay = guiClickDelay;
+        d.autosellClickDelay = autosellClickDelay;
         d.equipmentSwapDelay = equipmentSwapDelay;
         d.rodSwapDelay = rodSwapDelay;
         d.bookCombineDelay = bookCombineDelay;
@@ -499,6 +502,7 @@ public class MacroConfig {
             wardrobeSlotPest = d.wardrobeSlotPest;
             wardrobeSlotVisitor = d.wardrobeSlotVisitor;
             guiClickDelay = d.guiClickDelay;
+            autosellClickDelay = d.autosellClickDelay;
             equipmentSwapDelay = d.equipmentSwapDelay;
             rodSwapDelay = d.rodSwapDelay;
             bookCombineDelay = d.bookCombineDelay;
@@ -671,6 +675,7 @@ public class MacroConfig {
         int wardrobeSlotPest = DEFAULT_WARDROBE_SLOT_PEST;
         int wardrobeSlotVisitor = DEFAULT_WARDROBE_SLOT_VISITOR;
         int guiClickDelay = DEFAULT_GUI_CLICK_DELAY;
+        int autosellClickDelay = DEFAULT_AUTOSELL_CLICK_DELAY;
         int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
         int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
         int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;

@@ -229,7 +229,7 @@ public class ClickGui extends Screen {
         p.add(toggle("Enable PlotTP Rewarp",     () -> MacroConfig.enablePlotTpRewarp,              v -> { MacroConfig.enablePlotTpRewarp = v; save(); }));
         p.add(toggle("Hold W Until Wall",        () -> MacroConfig.holdWUntilWall,                  v -> { MacroConfig.holdWUntilWall = v; save(); }));
         p.add(cycleEnum("Unfly Mode", MacroConfig.UnflyMode.values(), () -> MacroConfig.unflyMode,  v -> { MacroConfig.unflyMode = v; save(); }));
-        p.add(new ScriptSelectorEntry());
+        p.add(textSetting("Farm Script",         () -> MacroConfig.restartScript,                   v -> { MacroConfig.restartScript = v; save(); }));
         p.add(textSetting("PlotTP Number",       () -> MacroConfig.plotTpNumber,                    v -> { MacroConfig.plotTpNumber = v; save(); }));
         p.add(button("Capture Rewarp Pos", () -> {
             Minecraft mc = Minecraft.getInstance();
@@ -252,6 +252,7 @@ public class ClickGui extends Screen {
         p.add(slider("Pest Chat",     0,   3000, () -> MacroConfig.pestChatTriggerDelay,  v -> { MacroConfig.pestChatTriggerDelay = v; save(); }, "ms"));
         p.add(slider("Book Combine",  100, 2000, () -> MacroConfig.bookCombineDelay,      v -> { MacroConfig.bookCombineDelay = v; save(); }, "ms"));
         p.add(slider("Junk Drop",     0,   1000, () -> MacroConfig.junkItemDropDelay,     v -> { MacroConfig.junkItemDropDelay = v; save(); }, "ms"));
+        p.add(slider("Autosell Click", 100, 2000, () -> MacroConfig.autosellClickDelay, v -> { MacroConfig.autosellClickDelay = v; save(); }, "ms"));
         return p;
     }
 
@@ -566,17 +567,6 @@ public class ClickGui extends Screen {
                 else searchActive = false;
                 return;
             }
-            if (key == 32) { searchQuery += ' '; return; }
-            if ((mods & GLFW.GLFW_MOD_CONTROL) == 0) {
-                String name = GLFW.glfwGetKeyName(key, scan);
-                if (name != null && name.length() == 1) {
-                    char c = name.charAt(0);
-                    if ((mods & GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
-                    searchQuery += c;
-                    return;
-                }
-            }
-            return;
         }
         if (key == 256) onClose();
     }
@@ -633,7 +623,6 @@ public class ClickGui extends Screen {
             if (e instanceof IntFieldEntry ie) return ie.label;
             if (e instanceof DoubleFieldEntry de) return de.label;
             if (e instanceof ButtonEntry be) return be.label;
-            if (e instanceof ScriptSelectorEntry) return "Farm Script";
             if (e instanceof ColorEntry ce) return ce.label;
             if (e instanceof ImportCodeEntry) return "Paste Theme Code";
             return "";
@@ -873,100 +862,6 @@ public class ClickGui extends Screen {
         }
     }
 
-
-    static class ScriptSelectorEntry implements Entry {
-        static final String[][] SCRIPTS = {
-                {"netherwart:1",       "Wart/Crops - S-Shape"},
-                {"netherwart:0",       "Wart/Crops - Vertical"},
-                {"sugarcane:classical","Sugarcane/Flowers - Classical"},
-                {"sugarcane:sshape",   "Sugarcane/Flowers - S-Shape"},
-                {"cocoa",              "Cocoa"},
-                {"cactus",             "Cactus"},
-                {"mushroom:0",         "Mushroom - Classical"},
-                {"mushroom:1",         "Mushroom - Staircase"},
-                {"pumpkin:1",          "Pumpkin/Melon"},
-        };
-
-        static String displayName() {
-            for (String[] s : SCRIPTS)
-                if (s[0].equals(MacroConfig.restartScript)) return s[1];
-            return MacroConfig.restartScript;
-        }
-
-        static void cycle(int dir) {
-            int cur = 0;
-            for (int i = 0; i < SCRIPTS.length; i++)
-                if (SCRIPTS[i][0].equals(MacroConfig.restartScript)) { cur = i; break; }
-            int next = (cur + dir + SCRIPTS.length) % SCRIPTS.length;
-            MacroConfig.restartScript = SCRIPTS[next][0];
-            save();
-        }
-
-        @Override public void render(GuiGraphics g, int x, int y, int w, int h, boolean hov, net.minecraft.client.gui.Font font) {
-            g.drawString(font, "Farm Script", x+2, y+h/2-4, hov ? C_TXT() : C_DIM(), false);
-            String disp = displayName();
-            int dw = font.width(disp);
-            // shrink if too long
-            while (dw > w - font.width("Farm Script") - 20 && disp.length() > 4) {
-                disp = disp.substring(0, disp.length()-1);
-                dw = font.width(disp + "..");
-            }
-            if (!disp.equals(displayName())) disp += "..";
-            g.drawString(font, disp, x+w-font.width(disp)-2, y+h/2-4, C_ON2(), false);
-        }
-
-        @Override public void onClick(int mx, int my) { cycle(1); }
-        @Override public SubPanel openSubPanel(int mx, int my, int sw, int sh) {
-            return new ScriptPickerSubPanel(mx, my, sw, sh);
-        }
-    }
-
-    static class ScriptPickerSubPanel implements SubPanel {
-        final int x, y, w = 240;
-        static final int ROW_H = 16, PAD = 3;
-        int h() { return PAD + ScriptSelectorEntry.SCRIPTS.length * (ROW_H + PAD) + PAD + 14; }
-
-        ScriptPickerSubPanel(int mx, int my, int sw, int sh) {
-            this.x = Math.min(mx, sw - w - 4);
-            this.y = Math.min(my, sh - h() - 4);
-        }
-
-        @Override public void render(GuiGraphics g, int mx, int my, net.minecraft.client.gui.Font font) {
-            int h = h();
-            fillRoundRect(g, x-2, y-2, w+4, h+4, 4, C_SPBD());
-            fillRoundRect(g, x, y, w, h, 3, C_SPBG());
-            g.drawString(font, "Farm Script", x+4, y+4, C_TXT(), false);
-            g.fill(x+4, y+14, x+w-4, y+15, C_ACC());
-            int ey = y + 18;
-            for (String[] s : ScriptSelectorEntry.SCRIPTS) {
-                boolean selected = s[0].equals(MacroConfig.restartScript);
-                boolean hov = mx >= x+4 && mx <= x+w-4 && my >= ey && my <= ey+ROW_H;
-                if (hov || selected) fillRoundRect(g, x+4, ey, w-8, ROW_H, 2, selected ? C_ON() : C_HOVER());
-                g.drawString(font, s[1], x+8, ey+ROW_H/2-4, selected ? C_TXT() : C_DIM(), false);
-                ey += ROW_H + PAD;
-            }
-        }
-
-        @Override public boolean contains(int mx, int my) { return mx >= x-2 && mx <= x+w+2 && my >= y-2 && my <= y+h()+2; }
-
-        @Override public boolean mouseClicked(int mx, int my, int btn, net.minecraft.client.gui.Font font) {
-            int ey = y + 18;
-            for (String[] s : ScriptSelectorEntry.SCRIPTS) {
-                if (my >= ey && my <= ey+ROW_H && mx >= x+4 && mx <= x+w-4) {
-                    MacroConfig.restartScript = s[0];
-                    save();
-                    return true;
-                }
-                ey += ROW_H + ScriptPickerSubPanel.PAD;
-            }
-            return true;
-        }
-
-        @Override public void scroll(int dir) {}
-        @Override public boolean keyPressed(int key, int scan, int mods) { return false; }
-        @Override public boolean charTyped(char c, int mods) { return false; }
-        @Override public void commit() {}
-    }
 
     interface SubPanel {
         void render(GuiGraphics g, int mx, int my, net.minecraft.client.gui.Font font);
