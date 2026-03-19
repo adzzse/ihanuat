@@ -22,7 +22,7 @@ public class BoosterCookieManager {
         String title = screen.getTitle().getString();
         String lowerTitle = title.toLowerCase();
 
-        if (!lowerTitle.contains("booster cookie"))
+        if (!lowerTitle.equals("booster cookie"))
             return;
 
         // Stage 0: Search inventory and click matching items
