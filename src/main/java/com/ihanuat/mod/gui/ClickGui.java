@@ -17,6 +17,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class ClickGui extends Screen {
 
@@ -39,40 +40,75 @@ public class ClickGui extends Screen {
 
     static int brighten(int c, int a) {
         return (c & 0xFF000000)
-             | (Math.min(255, ((c>>16)&0xFF)+((a>>16)&0xFF)) << 16)
-             | (Math.min(255, ((c>>8 )&0xFF)+((a>>8 )&0xFF)) << 8)
-             |  Math.min(255, ( c     &0xFF)+( a     &0xFF));
+                | (Math.min(255, ((c>>16)&0xFF)+((a>>16)&0xFF)) << 16)
+                | (Math.min(255, ((c>>8 )&0xFF)+((a>>8 )&0xFF)) << 8)
+                |  Math.min(255, ( c     &0xFF)+( a     &0xFF));
     }
     static int darken(int c, int a) {
         return (c & 0xFF000000)
-             | (Math.max(0, ((c>>16)&0xFF)-((a>>16)&0xFF)) << 16)
-             | (Math.max(0, ((c>>8 )&0xFF)-((a>>8 )&0xFF)) << 8)
-             |  Math.max(0, ( c    &0xFF) -( a     &0xFF));
+                | (Math.max(0, ((c>>16)&0xFF)-((a>>16)&0xFF)) << 16)
+                | (Math.max(0, ((c>>8 )&0xFF)-((a>>8 )&0xFF)) << 8)
+                |  Math.max(0, ( c    &0xFF) -( a     &0xFF));
     }
 
-    // theme share code — base64 of 9 hex ints joined by commas
+    // v1 = 9 GUI colors, v2 = 9 GUI + 14 HUD colors
     static String encodeTheme() {
-        String s = String.format("%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X",
-            MacroConfig.themePanelBg, MacroConfig.themePanelHeader, MacroConfig.themeAccent,
-            MacroConfig.themeText, MacroConfig.themeTextDim, MacroConfig.themeToggleOn,
-            MacroConfig.themeToggleOff, MacroConfig.themeSliderFill, MacroConfig.themeButtonHover);
+        String s = String.format("v2:%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X,%08X",
+                MacroConfig.themePanelBg, MacroConfig.themePanelHeader, MacroConfig.themeAccent,
+                MacroConfig.themeText, MacroConfig.themeTextDim, MacroConfig.themeToggleOn,
+                MacroConfig.themeToggleOff, MacroConfig.themeSliderFill, MacroConfig.themeButtonHover,
+                MacroConfig.hudBgColor, MacroConfig.hudAccentColor, MacroConfig.hudTitleColor,
+                MacroConfig.hudLabelColor, MacroConfig.hudValueColor, MacroConfig.hudBarBgColor,
+                MacroConfig.hudBarFillColor, MacroConfig.hudStateOffColor, MacroConfig.hudStateFarmingColor,
+                MacroConfig.hudStateCleaningColor, MacroConfig.hudStateRecoveringColor,
+                MacroConfig.hudStateVisitingColor, MacroConfig.hudStateAutosellingColor,
+                MacroConfig.hudStateSprayingColor);
         return Base64.getEncoder().encodeToString(s.getBytes());
     }
 
     static boolean applyThemeCode(String code) {
         try {
             String s = new String(Base64.getDecoder().decode(code.trim()));
-            String[] parts = s.split(",");
-            if (parts.length != 9) return false;
-            MacroConfig.themePanelBg     = (int) Long.parseLong(parts[0], 16);
-            MacroConfig.themePanelHeader = (int) Long.parseLong(parts[1], 16);
-            MacroConfig.themeAccent      = (int) Long.parseLong(parts[2], 16);
-            MacroConfig.themeText        = (int) Long.parseLong(parts[3], 16);
-            MacroConfig.themeTextDim     = (int) Long.parseLong(parts[4], 16);
-            MacroConfig.themeToggleOn    = (int) Long.parseLong(parts[5], 16);
-            MacroConfig.themeToggleOff   = (int) Long.parseLong(parts[6], 16);
-            MacroConfig.themeSliderFill  = (int) Long.parseLong(parts[7], 16);
-            MacroConfig.themeButtonHover = (int) Long.parseLong(parts[8], 16);
+            if (s.startsWith("v2:")) {
+                String[] parts = s.substring(3).split(",");
+                if (parts.length != 23) return false;
+                MacroConfig.themePanelBg     = (int) Long.parseLong(parts[0], 16);
+                MacroConfig.themePanelHeader = (int) Long.parseLong(parts[1], 16);
+                MacroConfig.themeAccent      = (int) Long.parseLong(parts[2], 16);
+                MacroConfig.themeText        = (int) Long.parseLong(parts[3], 16);
+                MacroConfig.themeTextDim     = (int) Long.parseLong(parts[4], 16);
+                MacroConfig.themeToggleOn    = (int) Long.parseLong(parts[5], 16);
+                MacroConfig.themeToggleOff   = (int) Long.parseLong(parts[6], 16);
+                MacroConfig.themeSliderFill  = (int) Long.parseLong(parts[7], 16);
+                MacroConfig.themeButtonHover = (int) Long.parseLong(parts[8], 16);
+                MacroConfig.hudBgColor              = (int) Long.parseLong(parts[9],  16);
+                MacroConfig.hudAccentColor          = (int) Long.parseLong(parts[10], 16);
+                MacroConfig.hudTitleColor           = (int) Long.parseLong(parts[11], 16);
+                MacroConfig.hudLabelColor           = (int) Long.parseLong(parts[12], 16);
+                MacroConfig.hudValueColor           = (int) Long.parseLong(parts[13], 16);
+                MacroConfig.hudBarBgColor           = (int) Long.parseLong(parts[14], 16);
+                MacroConfig.hudBarFillColor         = (int) Long.parseLong(parts[15], 16);
+                MacroConfig.hudStateOffColor        = (int) Long.parseLong(parts[16], 16);
+                MacroConfig.hudStateFarmingColor    = (int) Long.parseLong(parts[17], 16);
+                MacroConfig.hudStateCleaningColor   = (int) Long.parseLong(parts[18], 16);
+                MacroConfig.hudStateRecoveringColor = (int) Long.parseLong(parts[19], 16);
+                MacroConfig.hudStateVisitingColor   = (int) Long.parseLong(parts[20], 16);
+                MacroConfig.hudStateAutosellingColor= (int) Long.parseLong(parts[21], 16);
+                MacroConfig.hudStateSprayingColor   = (int) Long.parseLong(parts[22], 16);
+            } else {
+                // v1 legacy: 9 GUI colors, no prefix
+                String[] parts = s.split(",");
+                if (parts.length != 9) return false;
+                MacroConfig.themePanelBg     = (int) Long.parseLong(parts[0], 16);
+                MacroConfig.themePanelHeader = (int) Long.parseLong(parts[1], 16);
+                MacroConfig.themeAccent      = (int) Long.parseLong(parts[2], 16);
+                MacroConfig.themeText        = (int) Long.parseLong(parts[3], 16);
+                MacroConfig.themeTextDim     = (int) Long.parseLong(parts[4], 16);
+                MacroConfig.themeToggleOn    = (int) Long.parseLong(parts[5], 16);
+                MacroConfig.themeToggleOff   = (int) Long.parseLong(parts[6], 16);
+                MacroConfig.themeSliderFill  = (int) Long.parseLong(parts[7], 16);
+                MacroConfig.themeButtonHover = (int) Long.parseLong(parts[8], 16);
+            }
             MacroConfig.save();
             return true;
         } catch (Exception e) { return false; }
@@ -83,15 +119,21 @@ public class ClickGui extends Screen {
     private static final int ENTRY_H      = 18;
     private static final int ENTRY_PAD    = 3;
     private static final int PANEL_RADIUS = 4;
+    private static final int SEARCH_H     = 16;
 
     private boolean shiftHeld = false;
+    private String searchQuery = "";
+    private boolean searchActive = false;
 
     private final List<Panel> panels = new ArrayList<>();
     private SubPanel activeSubPanel = null;
     private Panel draggingPanel = null;
     private int dragOffX, dragOffY;
+    private boolean dragMovedPanel = false;
     private SliderEntry draggingSlider = null;
     private Panel draggingSliderPanel = null;
+    private Panel scrollbarPanel = null;
+    private int scrollbarDragStartY, scrollbarDragStartOffset;
 
     public ClickGui() { super(Component.literal("ihanuat")); }
 
@@ -136,14 +178,19 @@ public class ClickGui extends Screen {
     }
 
     private static int[] pos(int[][] saved, int i, Supplier<int[]> fallback) {
-        if (saved != null && i < saved.length && saved[i] != null && saved[i].length == 2
+        if (saved != null && i < saved.length && saved[i] != null && saved[i].length >= 2
                 && (saved[i][0] != 0 || saved[i][1] != 0)) return saved[i];
         return fallback.get();
     }
 
+    private static Panel makePanel(String title, int[] pos) {
+        Panel p = new Panel(title, pos[0], pos[1]);
+        if (pos.length >= 3) p.collapsed = pos[2] == 1;
+        return p;
+    }
 
     private Panel generalPanel(int[] pos) {
-        Panel p = new Panel("General", pos[0], pos[1]);
+        Panel p = makePanel("General", pos);
         p.add(toggle("Show Macro HUD",          () -> MacroConfig.showHud,                         v -> { MacroConfig.showHud = v; save(); }));
         p.add(toggle("GUI Only in Garden",       () -> MacroConfig.guiOnlyInGarden,                 v -> { MacroConfig.guiOnlyInGarden = v; save(); }));
         p.add(toggle("Enable PlotTP Rewarp",     () -> MacroConfig.enablePlotTpRewarp,              v -> { MacroConfig.enablePlotTpRewarp = v; save(); }));
@@ -162,7 +209,7 @@ public class ClickGui extends Screen {
     }
 
     private Panel delaysPanel(int[] pos) {
-        Panel p = new Panel("Delays", pos[0], pos[1]);
+        Panel p = makePanel("Delays", pos);
         p.add(slider("Rand Delay",    0,   1000, () -> MacroConfig.additionalRandomDelay, v -> { MacroConfig.additionalRandomDelay = v; save(); }, "ms"));
         p.add(slider("Rotation",      100, 3000, () -> MacroConfig.rotationTime,          v -> { MacroConfig.rotationTime = v; save(); }, "ms"));
         p.add(slider("GUI Click",     100, 2000, () -> MacroConfig.guiClickDelay,         v -> { MacroConfig.guiClickDelay = v; save(); }, "ms"));
@@ -176,7 +223,7 @@ public class ClickGui extends Screen {
     }
 
     private Panel wardrobePanel(int[] pos) {
-        Panel p = new Panel("Wardrobe Swap", pos[0], pos[1]);
+        Panel p = makePanel("Wardrobe Swap", pos);
         p.add(toggle("Auto Wardrobe (Pest)",    () -> MacroConfig.autoWardrobePest,    v -> { MacroConfig.autoWardrobePest = v; save(); }));
         p.add(toggle("Auto Wardrobe (Visitor)", () -> MacroConfig.autoWardrobeVisitor, v -> { MacroConfig.autoWardrobeVisitor = v; save(); }));
         p.add(toggle("Armor Swap (Visitor)",    () -> MacroConfig.armorSwapVisitor,    v -> { MacroConfig.armorSwapVisitor = v; save(); }));
@@ -187,7 +234,7 @@ public class ClickGui extends Screen {
     }
 
     private Panel autoRodPanel(int[] pos) {
-        Panel p = new Panel("Auto Rod", pos[0], pos[1]);
+        Panel p = makePanel("Auto Rod", pos);
         p.add(toggle("Rod on Pest CD",        () -> MacroConfig.autoRodPestCd,       v -> { MacroConfig.autoRodPestCd = v; save(); }));
         p.add(toggle("Rod on Pest Spawn",     () -> MacroConfig.autoRodPestSpawn,    v -> { MacroConfig.autoRodPestSpawn = v; save(); }));
         p.add(toggle("Rod on Return to Farm", () -> MacroConfig.autoRodReturnToFarm, v -> { MacroConfig.autoRodReturnToFarm = v; save(); }));
@@ -195,14 +242,14 @@ public class ClickGui extends Screen {
     }
 
     private Panel equipmentPanel(int[] pos) {
-        Panel p = new Panel("Equipment Swap", pos[0], pos[1]);
+        Panel p = makePanel("Equipment Swap", pos);
         p.add(toggle("Auto-Equipment",       () -> MacroConfig.autoEquipment,     v -> { MacroConfig.autoEquipment = v; save(); }));
         p.add(slider("Swap Delay", 100, 300, () -> MacroConfig.equipmentSwapDelay, v -> { MacroConfig.equipmentSwapDelay = v; save(); }, "ms"));
         return p;
     }
 
     private Panel autoPestPanel(int[] pos) {
-        Panel p = new Panel("Auto Pest", pos[0], pos[1]);
+        Panel p = makePanel("Auto Pest", pos);
         p.add(slider("Threshold",        1,  8,  () -> MacroConfig.pestThreshold,              v -> { MacroConfig.pestThreshold = v; save(); }, ""));
         p.add(toggle("Trigger on Chat",  () -> MacroConfig.triggerPestOnChat,                  v -> { MacroConfig.triggerPestOnChat = v; save(); }));
         p.add(toggle("Delay Crop Fever", () -> MacroConfig.delayPestForCropFever,              v -> { MacroConfig.delayPestForCropFever = v; save(); }));
@@ -214,32 +261,32 @@ public class ClickGui extends Screen {
     }
 
     private Panel autoVisitorPanel(int[] pos) {
-        Panel p = new Panel("Auto Visitor", pos[0], pos[1]);
+        Panel p = makePanel("Auto Visitor", pos);
         p.add(toggle("Auto-Visitor",  () -> MacroConfig.autoVisitor,       v -> { MacroConfig.autoVisitor = v; save(); }));
         p.add(slider("Threshold",     1, 5, () -> MacroConfig.visitorThreshold, v -> { MacroConfig.visitorThreshold = v; save(); }, ""));
         return p;
     }
 
     private Panel autoGeorgePanel(int[] pos) {
-        Panel p = new Panel("Auto George", pos[0], pos[1]);
+        Panel p = makePanel("Auto George", pos);
         p.add(toggle("Auto George Sell", () -> MacroConfig.autoGeorgeSell,       v -> { MacroConfig.autoGeorgeSell = v; save(); }));
         p.add(slider("Threshold",        1, 35, () -> MacroConfig.georgeSellThreshold, v -> { MacroConfig.georgeSellThreshold = v; save(); }, ""));
         return p;
     }
 
     private Panel autoSellPanel(int[] pos) {
-        Panel p = new Panel("Auto Sell", pos[0], pos[1]);
+        Panel p = makePanel("Auto Sell", pos);
         p.add(toggle("Custom Autosell", () -> MacroConfig.autoBoosterCookie, v -> { MacroConfig.autoBoosterCookie = v; save(); }));
         return p;
     }
 
     private Panel profitPanel(int[] pos) {
-        Panel p = new Panel("Profit Calculator", pos[0], pos[1]);
-        p.add(toggle("Session HUD",   () -> MacroConfig.showSessionProfitHud,       v -> { MacroConfig.showSessionProfitHud = v; save(); }));
-        p.add(toggle("Daily HUD",     () -> MacroConfig.showTotalToday,              v -> { MacroConfig.showTotalToday = v; save(); }));
-        p.add(toggle("Lifetime HUD",  () -> MacroConfig.showLifetimeHud,            v -> { MacroConfig.showLifetimeHud = v; save(); }));
-        p.add(toggle("HUD While Off", () -> MacroConfig.showProfitHudWhileInactive,  v -> { MacroConfig.showProfitHudWhileInactive = v; save(); }));
-        p.add(toggle("Compact",       () -> MacroConfig.compactProfitCalculator,    v -> { MacroConfig.compactProfitCalculator = v; save(); }));
+        Panel p = makePanel("Profit Calculator", pos);
+        p.add(toggle("Session HUD",   () -> MacroConfig.showSessionProfitHud,      v -> { MacroConfig.showSessionProfitHud = v; save(); }));
+        p.add(toggle("Daily HUD",     () -> MacroConfig.showTotalToday,            v -> { MacroConfig.showTotalToday = v; save(); }));
+        p.add(toggle("Lifetime HUD",  () -> MacroConfig.showLifetimeHud,           v -> { MacroConfig.showLifetimeHud = v; save(); }));
+        p.add(toggle("HUD While Off", () -> MacroConfig.showProfitHudWhileInactive, v -> { MacroConfig.showProfitHudWhileInactive = v; save(); }));
+        p.add(toggle("Compact",       () -> MacroConfig.compactProfitCalculator,   v -> { MacroConfig.compactProfitCalculator = v; save(); }));
         p.add(button("Reset Session",  () -> { MacroStateManager.resetSession(); notifyMsg("Session reset!"); }));
         p.add(button("Reset Daily",    () -> { ProfitManager.resetDaily();       notifyMsg("Daily reset!"); }));
         p.add(button("Reset Lifetime", () -> { ProfitManager.resetLifetime();    notifyMsg("Lifetime reset!"); }));
@@ -247,7 +294,7 @@ public class ClickGui extends Screen {
     }
 
     private Panel dynamicRestPanel(int[] pos) {
-        Panel p = new Panel("Dynamic Rest", pos[0], pos[1]);
+        Panel p = makePanel("Dynamic Rest", pos);
         p.add(intField("Script Time",   () -> MacroConfig.restScriptingTime,       v -> { MacroConfig.restScriptingTime = v; save(); }, "min"));
         p.add(intField("Script Offset", () -> MacroConfig.restScriptingTimeOffset, v -> { MacroConfig.restScriptingTimeOffset = v; save(); }, "min"));
         p.add(intField("Break Time",    () -> MacroConfig.restBreakTime,           v -> { MacroConfig.restBreakTime = v; save(); }, "min"));
@@ -256,7 +303,7 @@ public class ClickGui extends Screen {
     }
 
     private Panel qolPanel(int[] pos) {
-        Panel p = new Panel("QOL", pos[0], pos[1]);
+        Panel p = makePanel("QOL", pos);
         p.add(toggle("Book Combine",     () -> MacroConfig.autoBookCombine,    v -> { MacroConfig.autoBookCombine = v; save(); }));
         p.add(toggle("Always Combine",   () -> MacroConfig.alwaysActiveCombine,v -> { MacroConfig.alwaysActiveCombine = v; save(); }));
         p.add(slider("Book Threshold",   1, 35, () -> MacroConfig.bookThreshold, v -> { MacroConfig.bookThreshold = v; save(); }, ""));
@@ -278,38 +325,66 @@ public class ClickGui extends Screen {
     }
 
     private Panel themePanel(int[] pos) {
-        Panel p = new Panel("Theme", pos[0], pos[1]);
-        p.add(colorEntry("Panel BG",     () -> MacroConfig.themePanelBg,     v -> { MacroConfig.themePanelBg = v; save(); }));
-        p.add(colorEntry("Panel Header", () -> MacroConfig.themePanelHeader, v -> { MacroConfig.themePanelHeader = v; save(); }));
-        p.add(colorEntry("Accent",       () -> MacroConfig.themeAccent,      v -> { MacroConfig.themeAccent = v; save(); }));
-        p.add(colorEntry("Text",         () -> MacroConfig.themeText,        v -> { MacroConfig.themeText = v; save(); }));
-        p.add(colorEntry("Text Dimmed",  () -> MacroConfig.themeTextDim,     v -> { MacroConfig.themeTextDim = v; save(); }));
-        p.add(colorEntry("Toggle ON",    () -> MacroConfig.themeToggleOn,    v -> { MacroConfig.themeToggleOn = v; save(); }));
-        p.add(colorEntry("Toggle OFF",   () -> MacroConfig.themeToggleOff,   v -> { MacroConfig.themeToggleOff = v; save(); }));
-        p.add(colorEntry("Slider Fill",  () -> MacroConfig.themeSliderFill,  v -> { MacroConfig.themeSliderFill = v; save(); }));
-        p.add(colorEntry("Button Hover", () -> MacroConfig.themeButtonHover, v -> { MacroConfig.themeButtonHover = v; save(); }));
+        Panel p = makePanel("Theme", pos);
+        p.add(colorEntry("Panel BG",         () -> MacroConfig.themePanelBg,              v -> { MacroConfig.themePanelBg = v; save(); }));
+        p.add(colorEntry("Panel Header",     () -> MacroConfig.themePanelHeader,          v -> { MacroConfig.themePanelHeader = v; save(); }));
+        p.add(colorEntry("Accent",           () -> MacroConfig.themeAccent,               v -> { MacroConfig.themeAccent = v; save(); }));
+        p.add(colorEntry("Text",             () -> MacroConfig.themeText,                 v -> { MacroConfig.themeText = v; save(); }));
+        p.add(colorEntry("Text Dimmed",      () -> MacroConfig.themeTextDim,              v -> { MacroConfig.themeTextDim = v; save(); }));
+        p.add(colorEntry("Toggle ON",        () -> MacroConfig.themeToggleOn,             v -> { MacroConfig.themeToggleOn = v; save(); }));
+        p.add(colorEntry("Toggle OFF",       () -> MacroConfig.themeToggleOff,            v -> { MacroConfig.themeToggleOff = v; save(); }));
+        p.add(colorEntry("Slider Fill",      () -> MacroConfig.themeSliderFill,           v -> { MacroConfig.themeSliderFill = v; save(); }));
+        p.add(colorEntry("Button Hover",     () -> MacroConfig.themeButtonHover,          v -> { MacroConfig.themeButtonHover = v; save(); }));
+        p.add(colorEntry("HUD Background",   () -> MacroConfig.toArgb(MacroConfig.hudBgColor),          v -> { MacroConfig.hudBgColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("HUD Accent",       () -> MacroConfig.toArgb(MacroConfig.hudAccentColor),      v -> { MacroConfig.hudAccentColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("HUD Title",        () -> MacroConfig.toArgb(MacroConfig.hudTitleColor),       v -> { MacroConfig.hudTitleColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("HUD Label",        () -> MacroConfig.toArgb(MacroConfig.hudLabelColor),       v -> { MacroConfig.hudLabelColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("HUD Value",        () -> MacroConfig.toArgb(MacroConfig.hudValueColor),       v -> { MacroConfig.hudValueColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("HUD Bar BG",       () -> MacroConfig.toArgb(MacroConfig.hudBarBgColor),       v -> { MacroConfig.hudBarBgColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("HUD Bar Fill",     () -> MacroConfig.toArgb(MacroConfig.hudBarFillColor),     v -> { MacroConfig.hudBarFillColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State OFF",        () -> MacroConfig.toArgb(MacroConfig.hudStateOffColor),    v -> { MacroConfig.hudStateOffColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State Farming",    () -> MacroConfig.toArgb(MacroConfig.hudStateFarmingColor),    v -> { MacroConfig.hudStateFarmingColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State Cleaning",   () -> MacroConfig.toArgb(MacroConfig.hudStateCleaningColor),   v -> { MacroConfig.hudStateCleaningColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State Recovering", () -> MacroConfig.toArgb(MacroConfig.hudStateRecoveringColor), v -> { MacroConfig.hudStateRecoveringColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State Visiting",   () -> MacroConfig.toArgb(MacroConfig.hudStateVisitingColor),   v -> { MacroConfig.hudStateVisitingColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State Autosell",   () -> MacroConfig.toArgb(MacroConfig.hudStateAutosellingColor),v -> { MacroConfig.hudStateAutosellingColor = v & 0xFFFFFF; save(); }));
+        p.add(colorEntry("State Spraying",   () -> MacroConfig.toArgb(MacroConfig.hudStateSprayingColor),   v -> { MacroConfig.hudStateSprayingColor = v & 0xFFFFFF; save(); }));
         p.add(button("Copy Theme Code", () -> {
-            String code = encodeTheme();
-            Minecraft mc = Minecraft.getInstance();
-            mc.keyboardHandler.setClipboard(code);
+            Minecraft.getInstance().keyboardHandler.setClipboard(encodeTheme());
             notifyMsg("Theme code copied!");
         }));
         p.add(new ImportCodeEntry());
-        p.add(button("Reset to Default", () -> {
-            MacroConfig.themePanelBg     = 0xF0101018;
-            MacroConfig.themePanelHeader = 0xFF18182C;
-            MacroConfig.themeAccent      = 0xFF5050A0;
-            MacroConfig.themeText        = 0xFFCCCCCC;
-            MacroConfig.themeTextDim     = 0xFF666677;
-            MacroConfig.themeToggleOn    = 0xFF4444BB;
-            MacroConfig.themeToggleOff   = 0xFF2A2A3A;
-            MacroConfig.themeSliderFill  = 0xFF3A3A99;
-            MacroConfig.themeButtonHover = 0xFF4444BB;
-            save(); notifyMsg("Theme reset!");
+        p.add(button("Reset GUI to Default", () -> {
+            MacroConfig.themePanelBg=0xF0101018; MacroConfig.themePanelHeader=0xFF18182C;
+            MacroConfig.themeAccent=0xFF5050A0;  MacroConfig.themeText=0xFFCCCCCC;
+            MacroConfig.themeTextDim=0xFF666677; MacroConfig.themeToggleOn=0xFF4444BB;
+            MacroConfig.themeToggleOff=0xFF2A2A3A; MacroConfig.themeSliderFill=0xFF3A3A99;
+            MacroConfig.themeButtonHover=0xFF4444BB;
+            save(); notifyMsg("GUI theme reset!");
+        }));
+        p.add(button("Reset HUD to Default", () -> {
+            MacroConfig.hudBgColor=MacroConfig.DEFAULT_HUD_BG_COLOR;
+            MacroConfig.hudAccentColor=MacroConfig.DEFAULT_HUD_ACCENT_COLOR;
+            MacroConfig.hudTitleColor=MacroConfig.DEFAULT_HUD_TITLE_COLOR;
+            MacroConfig.hudLabelColor=MacroConfig.DEFAULT_HUD_LABEL_COLOR;
+            MacroConfig.hudValueColor=MacroConfig.DEFAULT_HUD_VALUE_COLOR;
+            MacroConfig.hudBarBgColor=MacroConfig.DEFAULT_HUD_BAR_BG_COLOR;
+            MacroConfig.hudBarFillColor=MacroConfig.DEFAULT_HUD_BAR_FILL_COLOR;
+            MacroConfig.hudStateOffColor=MacroConfig.DEFAULT_HUD_STATE_OFF_COLOR;
+            MacroConfig.hudStateFarmingColor=MacroConfig.DEFAULT_HUD_STATE_FARMING_COLOR;
+            MacroConfig.hudStateCleaningColor=MacroConfig.DEFAULT_HUD_STATE_CLEANING_COLOR;
+            MacroConfig.hudStateRecoveringColor=MacroConfig.DEFAULT_HUD_STATE_RECOVERING_COLOR;
+            MacroConfig.hudStateVisitingColor=MacroConfig.DEFAULT_HUD_STATE_VISITING_COLOR;
+            MacroConfig.hudStateAutosellingColor=MacroConfig.DEFAULT_HUD_STATE_AUTOSELLING_COLOR;
+            MacroConfig.hudStateSprayingColor=MacroConfig.DEFAULT_HUD_STATE_SPRAYING_COLOR;
+            save(); notifyMsg("HUD colors reset!");
+        }));
+        p.add(button("Reset Panel Positions", () -> {
+            MacroConfig.clickGuiPanelPositions = new int[13][3];
+            save(); panels.clear(); buildPanels(); notifyMsg("Positions reset!");
         }));
         return p;
     }
-
 
     private static ToggleEntry toggle(String l, Supplier<Boolean> g, Consumer<Boolean> s) { return new ToggleEntry(l, g, s); }
     private static SliderEntry slider(String l, int mn, int mx, Supplier<Integer> g, Consumer<Integer> s, String u) { return new SliderEntry(l, mn, mx, g, s, u); }
@@ -319,17 +394,32 @@ public class ClickGui extends Screen {
     private static ButtonEntry button(String l, Runnable a) { return new ButtonEntry(l, a); }
     private static ColorEntry colorEntry(String l, Supplier<Integer> g, Consumer<Integer> s) { return new ColorEntry(l, g, s); }
 
-
     @Override
     public void render(@NotNull GuiGraphics g, int mx, int my, float delta) {
         g.fill(0, 0, width, height, 0x99000000);
-        for (int i = panels.size() - 1; i >= 0; i--) panels.get(i).render(g, mx, my, font);
+        for (int i = panels.size() - 1; i >= 0; i--) panels.get(i).render(g, mx, my, font, searchQuery);
         if (activeSubPanel != null) activeSubPanel.render(g, mx, my, font);
-        g.drawString(font, "ihanuat  shift+scroll=pan", 3, height - 9, 0xFF333355, false);
+        // centered transparent search bar
+        int sw = 200, sh = SEARCH_H;
+        int sx = (width - sw) / 2, sy = height - sh - 6;
+        boolean cursorVis = (System.currentTimeMillis() / 500) % 2 == 0;
+        String hint = searchQuery.isEmpty()
+                ? (searchActive ? "|" : "\u00A77Search modules...")
+                : searchQuery + (searchActive && cursorVis ? "|" : "");
+        int bgAlpha = searchActive ? 0xBB000000 : 0x55000000;
+        fillRoundRect(g, sx-1, sy-1, sw+2, sh+2, 3, bgAlpha | (C_SPBD() & 0x00FFFFFF));
+        fillRoundRect(g, sx, sy, sw, sh, 3, bgAlpha | (C_SPBG() & 0x00FFFFFF));
+        g.drawString(font, hint, sx + 5, sy + sh/2 - 4, searchQuery.isEmpty() && !searchActive ? 0x66FFFFFF : C_TXT(), false);
+        g.drawString(font, "ihanuat  shift+scroll=pan", 4, height - 9, 0xFF333355, false);
     }
 
-
     void handleMouseClicked(int x, int y, int btn) {
+        // search bar click
+        int sw2 = 200, sh2 = SEARCH_H;
+        int sx2 = (width - sw2) / 2, sy2 = height - sh2 - 6;
+        if (x >= sx2 && x <= sx2+sw2 && y >= sy2 && y <= sy2+sh2) { searchActive = true; return; }
+        searchActive = false;
+
         if (activeSubPanel != null) {
             if (activeSubPanel.contains(x, y)) { activeSubPanel.mouseClicked(x, y, btn, font); return; }
             else { activeSubPanel.commit(); activeSubPanel = null; save(); return; }
@@ -337,19 +427,40 @@ public class ClickGui extends Screen {
         for (Panel panel : new ArrayList<>(panels)) {
             if (panel.headerContains(x, y)) {
                 if (btn == 0) { draggingPanel = panel; dragOffX = x - panel.x; dragOffY = y - panel.y; }
-                else if (btn == 1) { panel.collapsed = !panel.collapsed; }
+                else if (btn == 1) { panel.collapsed = !panel.collapsed; savePanelPositions(); }
                 panels.remove(panel); panels.add(0, panel);
                 return;
             }
-            if (panel.contains(x, y)) {
+            if (panel.contains(x, y, searchQuery)) {
+                // check if clicking the scrollbar track (rightmost 4px)
+                if (x >= panel.x + PANEL_W - 4 && panel.maxScroll(searchQuery) > 0) {
+                    scrollbarPanel = panel;
+                    scrollbarDragStartY = y;
+                    scrollbarDragStartOffset = panel.scrollOffset;
+                    panels.remove(panel); panels.add(0, panel);
+                    return;
+                }
                 panels.remove(panel); panels.add(0, panel);
-                Entry hit = panel.entryAt(x, y);
+                Entry hit = panel.entryAt(x, y, searchQuery);
                 if (hit != null) {
-                    if (btn == 0) {
-                        if (hit instanceof SliderEntry se) { draggingSlider = se; draggingSliderPanel = panel; se.onDrag(x, panel.x + ENTRY_PAD + 2, PANEL_W - ENTRY_PAD * 2 - 4); }
-                        else if (hit instanceof ColorEntry || hit instanceof ImportCodeEntry) { SubPanel sp = hit.openSubPanel(x, y, width, height); if (sp != null) activeSubPanel = sp; }
-                        else hit.onClick(x, y);
-                    } else if (btn == 1) { SubPanel sp = hit.openSubPanel(x, y, width, height); if (sp != null) activeSubPanel = sp; }
+                    if (hit instanceof SliderEntry se) {
+                        // click on value text → open int input; click elsewhere → drag
+                        int val = se.getter.get(); String vs = val + se.unit;
+                        int vw = Minecraft.getInstance().font.width(vs);
+                        int valX = panel.x + ENTRY_PAD + (PANEL_W - ENTRY_PAD * 2) - vw - 2;
+                        if (x >= valX - 2 && x <= valX + vw + 2) {
+                            SubPanel sp = se.openSubPanel(x, y, width, height);
+                            if (sp != null) activeSubPanel = sp;
+                        } else {
+                            draggingSlider = se; draggingSliderPanel = panel;
+                            se.onDrag(x, panel.x + ENTRY_PAD + 2, PANEL_W - ENTRY_PAD * 2 - 4);
+                        }
+                    } else if (hit instanceof ToggleEntry || hit instanceof CycleEnumEntry || hit instanceof ButtonEntry) {
+                        hit.onClick(x, y);
+                    } else {
+                        SubPanel sp = hit.openSubPanel(x, y, width, height);
+                        if (sp != null) activeSubPanel = sp;
+                    }
                 }
                 return;
             }
@@ -358,15 +469,31 @@ public class ClickGui extends Screen {
 
     void handleMouseReleased() {
         if (activeSubPanel instanceof ColorSubPanel cs) { cs.draggingSlider = -1; }
-        if (draggingPanel != null) savePanelPositions();
-        draggingPanel = null; draggingSlider = null; draggingSliderPanel = null;
+        if (draggingPanel != null) {
+            if (!dragMovedPanel) { draggingPanel.collapsed = !draggingPanel.collapsed; }
+            savePanelPositions();
+        }
+        dragMovedPanel = false;
+        draggingPanel = null; draggingSlider = null; draggingSliderPanel = null; scrollbarPanel = null;
     }
 
     void handleMouseDragged(int x, int y) {
         if (activeSubPanel instanceof ColorSubPanel cs) { cs.drag(x); return; }
+        if (scrollbarPanel != null) {
+            int ch = scrollbarPanel.contentHeight(searchQuery);
+            int clipH = scrollbarPanel.visibleHeight();
+            int maxScroll = scrollbarPanel.maxScroll(searchQuery);
+            if (maxScroll > 0) {
+                float ratio = (float)(y - scrollbarDragStartY) / (clipH - Math.max(10, clipH * clipH / ch));
+                scrollbarPanel.scrollOffset = Math.max(0, Math.min(maxScroll, (int)(scrollbarDragStartOffset + ratio * maxScroll)));
+            }
+            return;
+        }
         if (draggingPanel != null) {
-            draggingPanel.x = Math.max(0, Math.min(width - PANEL_W, x - dragOffX));
-            draggingPanel.y = Math.max(0, Math.min(height - HEADER_H, y - dragOffY));
+            int nx = Math.max(0, Math.min(width - PANEL_W, x - dragOffX));
+            int ny = Math.max(0, Math.min(height - HEADER_H, y - dragOffY));
+            if (nx != draggingPanel.x || ny != draggingPanel.y) dragMovedPanel = true;
+            draggingPanel.x = nx; draggingPanel.y = ny;
         } else if (draggingSlider != null && draggingSliderPanel != null) {
             draggingSlider.onDrag(x, draggingSliderPanel.x + ENTRY_PAD + 2, PANEL_W - ENTRY_PAD * 2 - 4);
         }
@@ -375,19 +502,42 @@ public class ClickGui extends Screen {
     void handleMouseScrolled(int x, int y, double hScroll, double vScroll, boolean shift) {
         if (hScroll != 0 || shift) { int pan = (int)((hScroll != 0 ? hScroll : vScroll) * 20); for (Panel p : panels) p.x += pan; return; }
         if (activeSubPanel != null && activeSubPanel.contains(x, y)) { activeSubPanel.scroll((int)-vScroll); return; }
-        for (Panel panel : panels) { if (panel.contains(x, y)) { panel.scroll((int)-vScroll); return; } }
+        for (Panel panel : panels) { if (panel.contains(x, y, searchQuery)) { panel.scroll((int)-vScroll, searchQuery); return; } }
     }
 
     void handleKeyPressed(int key, int scan, int mods) {
         if (activeSubPanel != null) {
             if (activeSubPanel.keyPressed(key, scan, mods)) return;
             if (key == 256) { activeSubPanel.commit(); activeSubPanel = null; save(); return; }
+            return;
+        }
+        if (searchActive) {
+            if (key == 259 && !searchQuery.isEmpty()) { searchQuery = searchQuery.substring(0, searchQuery.length()-1); return; }
+            if (key == 256 || key == 257 || key == 335) { searchActive = false; if (key == 256) searchQuery = ""; return; }
+            if (key == 32 && (mods & GLFW.GLFW_MOD_CONTROL) == 0) { searchQuery += ' '; return; }
+            if (key == 86 && (mods & GLFW.GLFW_MOD_CONTROL) != 0) {
+                String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
+                if (clip != null) searchQuery += clip;
+                return;
+            }
+            if ((mods & GLFW.GLFW_MOD_CONTROL) == 0) {
+                String name = GLFW.glfwGetKeyName(key, scan);
+                if (name != null && name.length() == 1) {
+                    char c = name.charAt(0);
+                    if ((mods & GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
+                    searchQuery += c;
+                }
+            }
+            return;
         }
         if (key == 256) onClose();
     }
 
     void handleKeyReleased(int key) { if (key == 340 || key == 344) shiftHeld = false; }
-    void handleCharTyped(char c, int mods) { if (activeSubPanel != null) activeSubPanel.charTyped(c, mods); }
+    void handleCharTyped(char c, int mods) {
+        if (activeSubPanel != null) { activeSubPanel.charTyped(c, mods); return; }
+        if (searchActive) searchQuery += c;
+    }
 
     @Override public void onClose() { savePanelPositions(); save(); super.onClose(); }
     @Override public boolean isPauseScreen() { return false; }
@@ -397,10 +547,10 @@ public class ClickGui extends Screen {
 
     private void savePanelPositions() {
         String[] order = {"General","Delays","Wardrobe Swap","Auto Rod","Equipment Swap","Auto Pest","Auto Visitor","Auto George","Auto Sell","Profit Calculator","Dynamic Rest","QOL","Theme"};
-        int[][] positions = new int[order.length][2];
+        int[][] positions = new int[order.length][3];
         for (int i = 0; i < order.length; i++)
             for (Panel p : panels)
-                if (p.title.equals(order[i])) { positions[i] = new int[]{p.x, p.y}; break; }
+                if (p.title.equals(order[i])) { positions[i] = new int[]{p.x, p.y, p.collapsed ? 1 : 0}; break; }
         MacroConfig.clickGuiPanelPositions = positions;
         MacroConfig.save();
     }
@@ -414,57 +564,82 @@ public class ClickGui extends Screen {
         }
     }
 
-
     static class Panel {
         String title; int x, y; boolean collapsed = true; int scrollOffset = 0;
         final List<Entry> entries = new ArrayList<>();
         Panel(String title, int x, int y) { this.title = title; this.x = x; this.y = y; }
         void add(Entry e) { entries.add(e); }
-        int contentHeight() { return entries.size() * (ENTRY_H + ENTRY_PAD) + ENTRY_PAD; }
-        int visibleHeight()  { return 126; }
-        int maxScroll()      { return Math.max(0, contentHeight() - visibleHeight()); }
-        boolean headerContains(int mx, int my) { return mx >= x && mx <= x + PANEL_W && my >= y && my <= y + HEADER_H; }
-        boolean contains(int mx, int my) {
-            if (collapsed) return false;
-            return mx >= x && mx <= x + PANEL_W && my >= y + HEADER_H && my <= y + HEADER_H + Math.min(contentHeight(), visibleHeight());
+
+        List<Entry> filtered(String q) {
+            if (q == null || q.isEmpty()) return entries;
+            String lq = q.toLowerCase();
+            return entries.stream().filter(e -> entryLabel(e).toLowerCase().contains(lq)).collect(Collectors.toList());
         }
-        Entry entryAt(int mx, int my) {
-            if (collapsed) return null;
-            int ey = y + HEADER_H + ENTRY_PAD - scrollOffset;
-            for (Entry e : entries) { if (my >= ey && my < ey + ENTRY_H && mx >= x && mx <= x + PANEL_W) return e; ey += ENTRY_H + ENTRY_PAD; }
+        static String entryLabel(Entry e) {
+            if (e instanceof ToggleEntry te) return te.label;
+            if (e instanceof SliderEntry se) return se.label;
+            if (e instanceof CycleEnumEntry<?> ce) return ce.label;
+            if (e instanceof TextSettingEntry te) return te.label;
+            if (e instanceof IntFieldEntry ie) return ie.label;
+            if (e instanceof ButtonEntry be) return be.label;
+            if (e instanceof ColorEntry ce) return ce.label;
+            return "";
+        }
+
+        int contentHeight(String q) { List<Entry> f=filtered(q); return f.size()*(ENTRY_H+ENTRY_PAD)+ENTRY_PAD; }
+        int visibleHeight() { return 126; }
+        int maxScroll(String q) { return Math.max(0, contentHeight(q)-visibleHeight()); }
+        boolean headerContains(int mx, int my) { return mx>=x&&mx<=x+PANEL_W&&my>=y&&my<=y+HEADER_H; }
+        boolean contains(int mx, int my, String q) {
+            boolean eff_collapsed = collapsed || (!q.isEmpty() && filtered(q).isEmpty());
+            if (eff_collapsed) return false;
+            return mx>=x&&mx<=x+PANEL_W&&my>=y+HEADER_H&&my<=y+HEADER_H+Math.min(contentHeight(q),visibleHeight());
+        }
+        Entry entryAt(int mx, int my, String q) {
+            boolean eff_collapsed = collapsed || (!q.isEmpty() && filtered(q).isEmpty());
+            if (eff_collapsed) return null;
+            // exclude scrollbar area (rightmost 4px)
+            if (mx > x + PANEL_W - 4) return null;
+            List<Entry> f = filtered(q);
+            int ey = y+HEADER_H+ENTRY_PAD-scrollOffset;
+            for (Entry e : f) { if (my>=ey&&my<ey+ENTRY_H&&mx>=x&&mx<=x+PANEL_W) return e; ey+=ENTRY_H+ENTRY_PAD; }
             return null;
         }
-        void scroll(int dir) { scrollOffset = Math.max(0, Math.min(maxScroll(), scrollOffset + dir * 10)); }
+        void scroll(int dir, String q) { scrollOffset=Math.max(0,Math.min(maxScroll(q),scrollOffset+dir*10)); }
 
-        void render(GuiGraphics g, int mx, int my, net.minecraft.client.gui.Font font) {
-            int totalH = collapsed ? HEADER_H : HEADER_H + Math.min(contentHeight(), visibleHeight());
+        void render(GuiGraphics g, int mx, int my, net.minecraft.client.gui.Font font, String q) {
+            List<Entry> f = filtered(q);
+            boolean hidden = !q.isEmpty() && f.isEmpty() && !title.toLowerCase().contains(q.toLowerCase());
+            if (hidden) return;
+            boolean eff_collapsed = collapsed || (!q.isEmpty() && f.isEmpty());
+            int ch = f.size()*(ENTRY_H+ENTRY_PAD)+ENTRY_PAD;
+            int totalH = eff_collapsed ? HEADER_H : HEADER_H + Math.min(ch, visibleHeight());
             fillRoundRect(g, x, y, PANEL_W, totalH, PANEL_RADIUS, C_BG());
             fillRoundRect(g, x, y, PANEL_W, HEADER_H, PANEL_RADIUS, C_HDR());
-            if (!collapsed) g.fill(x, y + HEADER_H - PANEL_RADIUS, x + PANEL_W, y + HEADER_H, C_HDR());
-            g.fill(x + 2, y + HEADER_H - 1, x + PANEL_W - 2, y + HEADER_H, C_LINE());
-            g.drawString(font, title, x + 5, y + HEADER_H / 2 - 4, C_TXT(), false);
-            g.drawString(font, collapsed ? ">" : "v", x + PANEL_W - 10, y + HEADER_H / 2 - 4, C_DIM(), false);
-            if (collapsed) return;
+            if (!eff_collapsed) g.fill(x, y+HEADER_H-PANEL_RADIUS, x+PANEL_W, y+HEADER_H, C_HDR());
+            g.fill(x+2, y+HEADER_H-1, x+PANEL_W-2, y+HEADER_H, C_LINE());
+            int titleCol = !q.isEmpty() && title.toLowerCase().contains(q.toLowerCase()) ? C_ON2() : C_TXT();
+            g.drawString(font, title, x+5, y+HEADER_H/2-4, titleCol, false);
+            g.drawString(font, eff_collapsed ? ">" : "v", x+PANEL_W-10, y+HEADER_H/2-4, C_DIM(), false);
+            if (eff_collapsed) return;
 
-            int clipY = y + HEADER_H, clipH = Math.min(contentHeight(), visibleHeight());
-            g.enableScissor(x, clipY, x + PANEL_W, clipY + clipH);
-            int ey = clipY + ENTRY_PAD - scrollOffset;
-            for (Entry e : entries) {
-                boolean hov = mx >= x && mx <= x + PANEL_W && my >= ey && my < ey + ENTRY_H;
-                if (hov) g.fill(x + 1, ey, x + PANEL_W - 1, ey + ENTRY_H, C_HOVER());
-                e.render(g, x + ENTRY_PAD, ey, PANEL_W - ENTRY_PAD * 2, ENTRY_H, hov, font);
-                ey += ENTRY_H + ENTRY_PAD;
+            int clipY=y+HEADER_H, clipH=Math.min(ch, visibleHeight());
+            g.enableScissor(x, clipY, x+PANEL_W, clipY+clipH);
+            int ey=clipY+ENTRY_PAD-scrollOffset;
+            for (Entry e : f) {
+                boolean hov=mx>=x&&mx<=x+PANEL_W&&my>=ey&&my<ey+ENTRY_H;
+                if (hov) g.fill(x+1, ey, x+PANEL_W-1, ey+ENTRY_H, C_HOVER());
+                e.render(g, x+ENTRY_PAD, ey, PANEL_W-ENTRY_PAD*2, ENTRY_H, hov, font);
+                ey+=ENTRY_H+ENTRY_PAD;
             }
             g.disableScissor();
-            if (maxScroll() > 0) {
-                float frac = (float) scrollOffset / maxScroll();
-                int bh = Math.max(10, clipH * clipH / contentHeight());
-                int by = clipY + (int)((clipH - bh) * frac);
-                g.fill(x + PANEL_W - 3, by, x + PANEL_W - 1, by + bh, C_ACC());
+            if (ch > visibleHeight()) {
+                float frac=(float)scrollOffset/Math.max(1,ch-visibleHeight());
+                int bh=Math.max(10,clipH*clipH/ch), by=clipY+(int)((clipH-bh)*frac);
+                g.fill(x+PANEL_W-3, by, x+PANEL_W-1, by+bh, C_ACC());
             }
         }
     }
-
 
     interface Entry {
         void render(GuiGraphics g, int x, int y, int w, int h, boolean hov, net.minecraft.client.gui.Font font);
@@ -551,34 +726,27 @@ public class ClickGui extends Screen {
         @Override public void onClick(int mx, int my) { action.run(); }
     }
 
-    // color swatch entry — shows label + color preview, right-click opens RGB sliders
     static class ColorEntry implements Entry {
         final String label; final Supplier<Integer> getter; final Consumer<Integer> setter;
         ColorEntry(String l, Supplier<Integer> g, Consumer<Integer> s) { label=l; getter=g; setter=s; }
         @Override public void render(GuiGraphics g, int x, int y, int w, int h, boolean hov, net.minecraft.client.gui.Font font) {
             int col = getter.get(); int mid = y+h/2-4;
             g.drawString(font, label, x+2, mid, hov ? C_TXT() : C_DIM(), false);
-            // color swatch
             int sw=16, sx=x+w-sw-2, sy=y+2;
             g.fill(sx-1, sy-1, sx+sw+1, sy+h-2, 0xFF555555);
             g.fill(sx, sy, sx+sw, sy+h-4, col | 0xFF000000);
-            // hex label
             String hex = String.format("#%06X", col & 0xFFFFFF);
             int hw = font.width(hex);
             g.drawString(font, hex, x+w-sw-hw-6, mid, C_DIM(), false);
         }
         @Override public void onClick(int mx, int my) {}
-        @Override public SubPanel openSubPanel(int mx, int my, int sw, int sh) {
-            return new ColorSubPanel(mx, my, sw, sh, label, getter.get(), setter);
-        }
+        @Override public SubPanel openSubPanel(int mx, int my, int sw, int sh) { return new ColorSubPanel(mx, my, sw, sh, label, getter.get(), setter); }
     }
 
-    // "Paste Theme Code" entry — text field + apply button inline
     static class ImportCodeEntry implements Entry {
         @Override public void render(GuiGraphics g, int x, int y, int w, int h, boolean hov, net.minecraft.client.gui.Font font) {
             fillRoundRect(g, x+2, y+2, w-4, h-4, 3, hov ? C_BTN() : C_OFF());
-            String lbl = "Paste Theme Code";
-            int tw = font.width(lbl);
+            String lbl = "Paste Theme Code"; int tw = font.width(lbl);
             g.drawString(font, lbl, x+(w-tw)/2, y+h/2-4, C_TXT(), false);
         }
         @Override public void onClick(int mx, int my) {}
@@ -590,7 +758,6 @@ public class ClickGui extends Screen {
         }
     }
 
-
     interface SubPanel {
         void render(GuiGraphics g, int mx, int my, net.minecraft.client.gui.Font font);
         boolean contains(int mx, int my);
@@ -601,15 +768,12 @@ public class ClickGui extends Screen {
         void commit();
     }
 
-    // color picker sub-panel with R/G/B/A sliders
     static class ColorSubPanel implements SubPanel {
-        final String label;
-        int r, g, b, a;
+        final String label; int r, g, b, a;
         final Consumer<Integer> setter;
         final int x, y, w = 260, h = 110;
-        int draggingSlider = -1; // 0=R,1=G,2=B,3=A
-        boolean editingHex = false;
-        String hexBuffer = "";
+        int draggingSlider = -1;
+        boolean editingHex = false; String hexBuffer = "";
         boolean cursorVisible = true; long lastBlink = System.currentTimeMillis();
 
         ColorSubPanel(int mx, int my, int sw, int sh, String label, int initial, Consumer<Integer> setter) {
@@ -620,66 +784,48 @@ public class ClickGui extends Screen {
         }
 
         int packed() { return (a << 24) | (r << 16) | (g << 8) | b; }
-
         int getChannel(int i) { return i==0?r:i==1?g:i==2?b:a; }
         void setChannel(int i, int v) { if(i==0)r=v; else if(i==1)g=v; else if(i==2)b=v; else a=v; }
-
         int sliderBx() { return x + 16; }
         int sliderBw() { return w - 50; }
         int sliderSy(int i) { return y + 32 + i * 18; }
 
         void applyDrag(int mx) {
             if (draggingSlider < 0) return;
-            int bx = sliderBx(), bw2 = sliderBw();
-            int val = Math.max(0, Math.min(255, Math.round((mx - bx) / (float) bw2 * 255)));
-            setChannel(draggingSlider, val);
-            setter.accept(packed()); save();
+            int val = Math.max(0, Math.min(255, Math.round((mx - sliderBx()) / (float) sliderBw() * 255)));
+            setChannel(draggingSlider, val); setter.accept(packed()); save();
         }
 
         @Override public void render(GuiGraphics g2, int mx, int my, net.minecraft.client.gui.Font font) {
             fillRoundRect(g2, x-2, y-2, w+4, h+4, 4, C_SPBD());
             fillRoundRect(g2, x, y, w, h, 3, C_SPBG());
-
-            // label
             g2.drawString(font, label, x+4, y+4, C_TXT(), false);
-
-            // swatch
-            int sw2=20; int sx=x+w-sw2-4, sy0=y+4;
+            int sw2=20, sx=x+w-sw2-4, sy0=y+4;
             g2.fill(sx-1,sy0-1,sx+sw2+1,sy0+sw2+1,0xFF555555);
             g2.fill(sx,sy0,sx+sw2,sy0+sw2, packed());
-
-            // hex field — clickable to edit
             if (System.currentTimeMillis()-lastBlink>500) { cursorVisible=!cursorVisible; lastBlink=System.currentTimeMillis(); }
             String hexDisplay = editingHex ? hexBuffer+(cursorVisible?"|":"") : String.format("#%08X", packed());
-            int hexColor = editingHex ? C_TXT() : C_DIM();
             g2.fill(x+4, y+15, x+w-sw2-10, y+27, C_SBGR());
             g2.fill(x+4, y+27, x+w-sw2-10, y+28, editingHex ? C_ACC() : 0xFF333355);
-            g2.drawString(font, hexDisplay, x+6, y+17, hexColor, false);
-            // small hint
-            if (!editingHex) g2.drawString(font, "click hex to edit", x+w-sw2-9-font.width("click hex to edit"), y+18, C_DIM(), false);
-
-            // R/G/B/A sliders
+            g2.drawString(font, hexDisplay, x+6, y+17, editingHex ? C_TXT() : C_DIM(), false);
+            if (!editingHex) g2.drawString(font, "click to edit", x+w-sw2-9-font.width("click to edit"), y+18, C_DIM(), false);
             int[] cols = {0xFFCC4444, 0xFF44CC44, 0xFF4444CC, 0xFFAAAAAA};
             String[] names = {"R","G","B","A"};
-            int bx = sliderBx(), bw2 = sliderBw();
             for (int i = 0; i < 4; i++) {
-                int val = getChannel(i);
-                int sy = sliderSy(i);
+                int val = getChannel(i); int sy = sliderSy(i);
                 g2.drawString(font, names[i], x+4, sy+1, cols[i], false);
-                fillRoundRect(g2, bx, sy+3, bw2, 6, 2, C_SBGR());
-                int fw = (int)(val / 255f * bw2);
-                if (fw > 0) fillRoundRect(g2, bx, sy+3, fw, 6, 2, cols[i]);
-                boolean hov = draggingSlider == i || (mx >= bx && mx <= bx+bw2 && my >= sy && my <= sy+10);
-                int kx = bx + fw - 3;
-                g2.fill(Math.max(bx,kx), sy+1, Math.max(bx,kx)+6, sy+9, hov ? 0xFFFFFFFF : 0xFFCCCCCC);
-                g2.drawString(font, String.valueOf(val), bx+bw2+4, sy+1, cols[i], false);
+                fillRoundRect(g2, sliderBx(), sy+3, sliderBw(), 6, 2, C_SBGR());
+                int fw = (int)(val / 255f * sliderBw());
+                if (fw > 0) fillRoundRect(g2, sliderBx(), sy+3, fw, 6, 2, cols[i]);
+                boolean hov = draggingSlider == i || (mx >= sliderBx() && mx <= sliderBx()+sliderBw() && my >= sy && my <= sy+10);
+                int kx = sliderBx() + fw - 3;
+                g2.fill(Math.max(sliderBx(),kx), sy+1, Math.max(sliderBx(),kx)+6, sy+9, hov ? 0xFFFFFFFF : 0xFFCCCCCC);
+                g2.drawString(font, String.valueOf(val), sliderBx()+sliderBw()+4, sy+1, cols[i], false);
             }
         }
 
         @Override public boolean contains(int mx, int my) { return mx >= x-2 && mx <= x+w+2 && my >= y-2 && my <= y+h+2; }
-
         @Override public boolean mouseClicked(int mx, int my, int btn, net.minecraft.client.gui.Font font) {
-            // click on hex field
             int sw2=20;
             if (mx >= x+4 && mx <= x+w-sw2-10 && my >= y+15 && my <= y+28) {
                 editingHex = !editingHex;
@@ -687,69 +833,50 @@ public class ClickGui extends Screen {
                 return true;
             }
             editingHex = false;
-            // click on slider
-            int bx = sliderBx(), bw2 = sliderBw();
             for (int i = 0; i < 4; i++) {
                 int sy = sliderSy(i);
-                if (my >= sy && my <= sy+10 && mx >= bx && mx <= bx+bw2) {
-                    draggingSlider = i;
-                    applyDrag(mx);
-                    return true;
+                if (my >= sy && my <= sy+10 && mx >= sliderBx() && mx <= sliderBx()+sliderBw()) {
+                    draggingSlider = i; applyDrag(mx); return true;
                 }
             }
             return true;
         }
-
-        // called from handleMouseDragged via activeSubPanel
         public void drag(int mx) { applyDrag(mx); }
-
         @Override public void scroll(int dir) {}
-
         @Override public boolean keyPressed(int key, int scan, int mods) {
             if (editingHex) {
                 if (key == 259 && !hexBuffer.isEmpty()) { hexBuffer = hexBuffer.substring(0, hexBuffer.length()-1); return true; }
                 if (key == 257 || key == 335) { applyHex(); editingHex = false; return true; }
                 if (key == 256) { editingHex = false; return true; }
-                if (key == 86 && (mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
+                if (key == 86 && (mods & GLFW.GLFW_MOD_CONTROL) != 0) {
                     String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
                     if (clip != null) hexBuffer += clip.replaceAll("[^0-9a-fA-F#]","");
                     return true;
                 }
-                // GLFW fallback for typing since charTyped may not fire
-                if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) == 0) {
-                    String name = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, scan);
+                if ((mods & GLFW.GLFW_MOD_CONTROL) == 0) {
+                    String name = GLFW.glfwGetKeyName(key, scan);
                     if (name != null && name.length() == 1) {
                         char c = name.charAt(0);
-                        if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
-                        if (Character.isDigit(c) || (c>='a'&&c<='f') || (c>='A'&&c<='F')) {
-                            if (hexBuffer.length() < 8) hexBuffer += c;
-                            return true;
-                        }
+                        if ((mods & GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
+                        if (Character.isDigit(c)||(c>='a'&&c<='f')||(c>='A'&&c<='F')) { if (hexBuffer.length() < 8) hexBuffer += c; return true; }
                     }
                 }
-                return true; // swallow all keys while editing hex
-            }
-            return false;
-        }
-
-        @Override public boolean charTyped(char c, int mods) {
-            if (editingHex && (Character.isDigit(c)||(c>='a'&&c<='f')||(c>='A'&&c<='F'))) {
-                if (hexBuffer.length() < 8) hexBuffer += c;
                 return true;
             }
             return false;
         }
-
+        @Override public boolean charTyped(char c, int mods) {
+            if (editingHex && (Character.isDigit(c)||(c>='a'&&c<='f')||(c>='A'&&c<='F'))) { if (hexBuffer.length() < 8) hexBuffer += c; return true; }
+            return false;
+        }
         void applyHex() {
             try {
-                String h = hexBuffer.replaceAll("#","");
-                long v = Long.parseLong(h, 16);
+                String h = hexBuffer.replaceAll("#",""); long v = Long.parseLong(h, 16);
                 if (h.length() <= 6) { r=(int)((v>>16)&0xFF); g=(int)((v>>8)&0xFF); b=(int)(v&0xFF); }
                 else { a=(int)((v>>24)&0xFF); r=(int)((v>>16)&0xFF); g=(int)((v>>8)&0xFF); b=(int)(v&0xFF); }
                 setter.accept(packed()); save();
             } catch (Exception ignored) {}
         }
-
         @Override public void commit() { setter.accept(packed()); save(); }
     }
 
@@ -777,16 +904,16 @@ public class ClickGui extends Screen {
         @Override public boolean keyPressed(int key, int scan, int mods) {
             if (key==259 && !value.isEmpty()) { value=value.substring(0,value.length()-1); return true; }
             if (key==257 || key==335) { commit(); return true; }
-            if (key==86 && (mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
+            if (key==32 && (mods & GLFW.GLFW_MOD_CONTROL) == 0) { value += ' '; return true; }
+            if (key==86 && (mods & GLFW.GLFW_MOD_CONTROL) != 0) {
                 String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
-                if (clip != null) value += clip;
-                return true;
+                if (clip != null) value += clip; return true;
             }
-            if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) == 0) {
-                String name = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, scan);
+            if ((mods & GLFW.GLFW_MOD_CONTROL) == 0) {
+                String name = GLFW.glfwGetKeyName(key, scan);
                 if (name != null && name.length() == 1) {
                     char c = name.charAt(0);
-                    if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
+                    if ((mods & GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
                     value += c; return true;
                 }
             }
@@ -821,11 +948,11 @@ public class ClickGui extends Screen {
         @Override public boolean keyPressed(int key, int scan, int mods) {
             if (key==259&&!raw.isEmpty()) { raw=raw.substring(0,raw.length()-1); return true; }
             if (key==257||key==335) { commit(); return true; }
-            if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) == 0) {
-                String name = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, scan);
+            if ((mods & GLFW.GLFW_MOD_CONTROL) == 0) {
+                String name = GLFW.glfwGetKeyName(key, scan);
                 if (name != null && name.length() == 1) {
                     char c = name.charAt(0);
-                    if (Character.isDigit(c) || (c == '-' && raw.isEmpty())) { raw += c; return true; }
+                    if (Character.isDigit(c)||(c=='-'&&raw.isEmpty())) { raw+=c; return true; }
                 }
             }
             return false;
