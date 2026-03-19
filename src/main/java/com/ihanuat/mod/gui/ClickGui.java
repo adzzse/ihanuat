@@ -510,10 +510,6 @@ public class ClickGui extends Screen {
             MacroConfig.autoEquipment = v;
             save();
         }));
-        p.add(slider("Swap Delay", "equipmentSwapDelay", 100, 300, () -> MacroConfig.equipmentSwapDelay, v -> {
-            MacroConfig.equipmentSwapDelay = v;
-            save();
-        }, "ms"));
         return p;
     }
 
@@ -1652,6 +1648,7 @@ public class ClickGui extends Screen {
                 {"mushroom:0", "Mushroom - Classical"},
                 {"mushroom:1", "Mushroom - Staircase"},
                 {"pumpkin:1", "Pumpkin/Melon"},
+                {"echo", "Echo"}
         };
 
         static String displayName() {
