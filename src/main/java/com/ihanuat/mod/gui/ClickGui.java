@@ -1406,4 +1406,4 @@ public class ClickGui extends Screen {
             setter.accept(values);
         }
     }
-}
+} //hi
