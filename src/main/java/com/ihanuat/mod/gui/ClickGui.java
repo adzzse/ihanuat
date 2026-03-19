@@ -230,6 +230,8 @@ public class ClickGui extends Screen {
     private Panel autoSellPanel(int[] pos) {
         Panel p = new Panel("Auto Sell", pos[0], pos[1]);
         p.add(toggle("Custom Autosell", () -> MacroConfig.autoBoosterCookie, v -> { MacroConfig.autoBoosterCookie = v; save(); }));
+        p.add(listSetting("Autosell Item List", () -> MacroConfig.boosterCookieItems,
+                v -> { MacroConfig.boosterCookieItems = new ArrayList<>(v); save(); }));
         return p;
     }
 
@@ -315,6 +317,7 @@ public class ClickGui extends Screen {
     private static SliderEntry slider(String l, int mn, int mx, Supplier<Integer> g, Consumer<Integer> s, String u) { return new SliderEntry(l, mn, mx, g, s, u); }
     private static <E extends Enum<E>> CycleEnumEntry<E> cycleEnum(String l, E[] vs, Supplier<E> g, Consumer<E> s) { return new CycleEnumEntry<>(l, vs, g, s); }
     private static TextSettingEntry textSetting(String l, Supplier<String> g, Consumer<String> s) { return new TextSettingEntry(l, g, s); }
+    private static ListSettingEntry listSetting(String l, Supplier<List<String>> g, Consumer<List<String>> s) { return new ListSettingEntry(l, g, s); }
     private static IntFieldEntry intField(String l, Supplier<Integer> g, Consumer<Integer> s, String u) { return new IntFieldEntry(l, g, s, u); }
     private static ButtonEntry button(String l, Runnable a) { return new ButtonEntry(l, a); }
     private static ColorEntry colorEntry(String l, Supplier<Integer> g, Consumer<Integer> s) { return new ColorEntry(l, g, s); }
@@ -526,6 +529,27 @@ public class ClickGui extends Screen {
         }
         @Override public void onClick(int mx, int my) {}
         @Override public SubPanel openSubPanel(int mx, int my, int sw, int sh) { return new StringInputSubPanel(mx, my, sw, sh, label, getter.get(), setter); }
+    }
+
+    static class ListSettingEntry implements Entry {
+        final String label; final Supplier<List<String>> getter; final Consumer<List<String>> setter;
+        ListSettingEntry(String l, Supplier<List<String>> g, Consumer<List<String>> s) { label=l; getter=g; setter=s; }
+        @Override public void render(GuiGraphics g, int x, int y, int w, int h, boolean hov, net.minecraft.client.gui.Font font) {
+            List<String> values = getter.get();
+            String summary;
+            if (values == null || values.isEmpty()) summary = "(empty)";
+            else if (values.size() == 1) summary = values.get(0);
+            else summary = values.get(0) + " +" + (values.size() - 1);
+            if (summary.length() > 11) summary = summary.substring(0, 9) + "..";
+            int vw = font.width(summary);
+            int mid = y + h / 2 - 4;
+            g.drawString(font, label, x + 2, mid, hov ? C_TXT() : C_DIM(), false);
+            g.drawString(font, summary, x + w - vw - 6, mid, C_DIM(), false);
+        }
+        @Override public void onClick(int mx, int my) {}
+        @Override public SubPanel openSubPanel(int mx, int my, int sw, int sh) {
+            return new ListInputSubPanel(mx, my, sw, sh, label, getter.get(), setter);
+        }
     }
 
     static class IntFieldEntry implements Entry {
@@ -837,6 +861,89 @@ public class ClickGui extends Screen {
         @Override public void commit() {
             try { int v=Integer.parseInt(raw); setter.accept(min==Integer.MIN_VALUE?v:Math.max(min,Math.min(max,v))); }
             catch (NumberFormatException ignored) {}
+        }
+    }
+
+    static class ListInputSubPanel implements SubPanel {
+        final String label;
+        final StringBuilder value;
+        final Consumer<List<String>> setter;
+        final int x, y, w = 300, h = 96;
+        boolean cursorVisible = true;
+        long lastBlink = System.currentTimeMillis();
+
+        ListInputSubPanel(int mx, int my, int sw, int sh, String label, List<String> initial, Consumer<List<String>> setter) {
+            this.label = label;
+            this.setter = setter;
+            this.value = new StringBuilder(initial == null ? "" : String.join("\n", initial));
+            this.x = Math.min(mx, sw - w - 4);
+            this.y = Math.min(my, sh - h - 4);
+        }
+
+        @Override public void render(GuiGraphics g, int mx, int my, net.minecraft.client.gui.Font font) {
+            fillRoundRect(g, x-2, y-2, w+4, h+4, 4, C_SPBD());
+            fillRoundRect(g, x, y, w, h, 3, C_SPBG());
+            g.drawString(font, label, x+5, y+6, C_TXT(), false);
+            g.fill(x+4, y+20, x+w-4, y+h-6, C_SBGR());
+            g.fill(x+4, y+h-6, x+w-4, y+h-5, C_ACC());
+            if (System.currentTimeMillis() - lastBlink > 500) { cursorVisible = !cursorVisible; lastBlink = System.currentTimeMillis(); }
+
+            String[] lines = value.toString().split("\n", -1);
+            int visibleLines = Math.max(1, (h - 34) / 10);
+            int start = Math.max(0, lines.length - visibleLines);
+            int drawY = y + 26;
+            for (int i = start; i < lines.length && drawY <= y + h - 18; i++) {
+                String line = lines[i];
+                String disp = line.length() > 38 ? line.substring(line.length() - 38) : line;
+                if (i == lines.length - 1 && cursorVisible) disp += "|";
+                g.drawString(font, disp, x + 6, drawY, C_TXT(), false);
+                drawY += 10;
+            }
+        }
+
+        @Override public boolean contains(int mx, int my) { return mx >= x-2 && mx <= x+w+2 && my >= y-2 && my <= y+h+2; }
+        @Override public boolean mouseClicked(int mx, int my, int btn, net.minecraft.client.gui.Font font) { return true; }
+        @Override public void scroll(int dir) {}
+
+        @Override public boolean keyPressed(int key, int scan, int mods) {
+            if (key == 259 && value.length() > 0) {
+                value.deleteCharAt(value.length() - 1);
+                return true;
+            }
+            if (key == 257 || key == 335) {
+                value.append('\n');
+                return true;
+            }
+            if (key == 86 && (mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) != 0) {
+                String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
+                if (clip != null) value.append(clip.replace("\r", ""));
+                return true;
+            }
+            if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL) == 0) {
+                String name = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, scan);
+                if (name != null && name.length() == 1) {
+                    char c = name.charAt(0);
+                    if ((mods & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) c = Character.toUpperCase(c);
+                    value.append(c);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override public boolean charTyped(char c, int mods) {
+            if (c == '\r') return true;
+            value.append(c);
+            return true;
+        }
+
+        @Override public void commit() {
+            List<String> values = new ArrayList<>();
+            for (String line : value.toString().split("\\R")) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) values.add(trimmed);
+            }
+            setter.accept(values);
         }
     }
 }
