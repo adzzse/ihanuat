@@ -22,7 +22,7 @@ before starting, ensure the auto start pest, auto start visitor, and wardrobe sw
 enable visitors, wardrobe swap, equipment swap according to your needs, all can be toggled on or off  
 set the start and end of the farm using the button in config while standing on that block in the config.  
 
-change the auto direction and should work on most farms, use .ez-listfarms to find the right command.
+change the auto direction and should work on most farms.
 
 <img width="2559" height="1599" alt="image" src="https://github.com/user-attachments/assets/4ba9280f-76dc-449c-9afc-1a8892a21917" />
 dynamic rest works by randomly choosing a time between your minimum scripting time and maximum scripting time. once that is reached you will be automatically disconnected.
