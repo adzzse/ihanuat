@@ -103,6 +103,7 @@ public class ClickGui extends Screen {
 
     static Character fallbackCharFromKey(int key, int scan, int mods) {
         if ((mods & GLFW.GLFW_MOD_CONTROL) != 0) return null;
+        if ((mods & GLFW.GLFW_MOD_SHIFT) != 0 && key >= 48 && key <= 57) return (char) key;
         String name = GLFW.glfwGetKeyName(key, scan);
         if (name == null || name.length() != 1) return null;
         char c = name.charAt(0);
@@ -289,6 +290,15 @@ public class ClickGui extends Screen {
     private static final int HELPER_W = 270;
     private static final int HELPER_MAX_CONTENT_H = 168;
     private static int activeLibraryIndex = -1;
+    private static String previewOriginalCode = null;
+
+    private static void revertLibraryPreview() {
+        if (previewOriginalCode != null) {
+            applyThemeCode(previewOriginalCode);
+            previewOriginalCode = null;
+            activeLibraryIndex = -1;
+        }
+    }
 
     private final List<Panel> panels = new ArrayList<>();
     private SubPanel activeSubPanel = null;
@@ -888,7 +898,6 @@ public class ClickGui extends Screen {
         p.add(colorEntry("Helper Dim", () -> MacroConfig.toArgb(MacroConfig.helperTxt3Color), v -> {
             MacroConfig.helperTxt3Color = v & 0xFFFFFF; save();
         }));
-        p.add(new ImportCodeEntry());
         p.add(button("Reset to Default", () -> {
             MacroConfig.themePanelBg = 0xF0101018;
             MacroConfig.themePanelHeader = 0xFF18182C;
@@ -1015,6 +1024,7 @@ public class ClickGui extends Screen {
             case "Auto George"       -> "autogeorge";
             case "Auto Sell"         -> "autosell";
             case "Profit Calculator" -> "profitcalculator";
+            case "Wardrobe Swap"     -> "wardrobeswap";
             default                  -> null;
         };
     }
@@ -1023,7 +1033,7 @@ public class ClickGui extends Screen {
         return switch (panelTitle) {
             case "General", "Delays", "Dynamic Rest", "QOL", "Chat Rules",
                  "Auto Rod", "Equipment Swap", "Auto Pest", "Auto Visitor",
-                 "Auto George", "Auto Sell", "Profit Calculator" -> true;
+                 "Auto George", "Auto Sell", "Profit Calculator", "Wardrobe Swap" -> true;
             default -> false;
         };
     }
@@ -1041,7 +1051,7 @@ public class ClickGui extends Screen {
             case "Auto Visitor"        -> "autovisitor";
             case "Auto George"         -> "autogeorge";
             case "Auto Sell"           -> "autosell";
-            case "Profit Calculator"   -> "profitcalculator";
+            case "Wardrobe Swap"     -> "wardrobeswap";
             default                    -> null;
         };
         if (newTopic != null && !newTopic.equals(helperTopic)) {
@@ -1131,6 +1141,14 @@ public class ClickGui extends Screen {
             case "autosell" -> new String[]{
                     "Custom Autosell — Enable ihanuat's custom autosell routine to sell items from the Autosell Item List.",
                     "Autosell Item List — List of item names to sell automatically during the autosell sequence.",
+            };
+            case "wardrobeswap" -> new String[]{
+                    "Auto Wardrobe (Pest) — Turn on/off changing wardrobe automatically when pests spawn.",
+                    "Auto Wardrobe (Visitor) — Switch to the Visitor wardrobe slot when a visitor appears.",
+                    "Armor Swap (Visitor) — Swap individual armor pieces for visitors instead of switching the full wardrobe slot. Use this if you want to keep your current wardrobe but change specific pieces.",
+                    "Farming Slot — Which wardrobe slot to use for farming and pest clearing armor.",
+                    "Pest Slot — Which wardrobe slot to use for pest spawning armor.",
+                    "Visitor Slot — Which wardrobe slot to use when handling visitors.",
             };
             case "profitcalculator" -> new String[]{
                     "Session HUD — Display the profit earned during the current macro session.",
@@ -1521,10 +1539,12 @@ public class ClickGui extends Screen {
     void handleKeyPressed(int key, int scan, int mods) {
         if (activeSubPanel != null) {
             if (activeSubPanel.keyPressed(key, scan, mods)) {
-                // Enter (257/335) without Shift closes the subpanel (for all types)
                 if ((key == 257 || key == 335) && (mods & GLFW.GLFW_MOD_SHIFT) == 0) {
                     activeSubPanel = null;
                     save();
+                }
+                if ((mods & GLFW.GLFW_MOD_SHIFT) != 0 && key >= 48 && key <= 57) {
+                    suppressNextChar = true;
                 }
                 return;
             }
@@ -1576,7 +1596,10 @@ public class ClickGui extends Screen {
         if (key == 340 || key == 344) shiftHeld = false;
     }
 
+    private boolean suppressNextChar = false;
+
     void handleCharTyped(char c, int mods) {
+        if (suppressNextChar) { suppressNextChar = false; return; }
         if (activeSubPanel != null) {
             activeSubPanel.charTyped(c, mods);
             return;
@@ -1587,6 +1610,7 @@ public class ClickGui extends Screen {
     @Override
     public void onClose() {
         savePanelPositions();
+        revertLibraryPreview();
         save();
         super.onClose();
     }
@@ -1597,11 +1621,6 @@ public class ClickGui extends Screen {
     }
 
     private static void save() {
-        if (activeLibraryIndex >= 0 && activeLibraryIndex < MacroConfig.savedThemes.size()) {
-            String[] parts = MacroConfig.savedThemes.get(activeLibraryIndex).split("\\|", 2);
-            String name = parts.length > 0 ? parts[0] : "";
-            MacroConfig.savedThemes.set(activeLibraryIndex, name + "|" + encodeTheme());
-        }
         MacroConfig.save();
     }
 
@@ -2232,6 +2251,13 @@ public class ClickGui extends Screen {
                 MacroConfig.drawStyledText(g, font, "confirm", cbx, bcy + BTN_H / 2 - 4, confHov ? 0xFFFF5555 : C_DIM());
             }
 
+            if (activeLibraryIndex >= 0) {
+                int sw = font.width("save");
+                int sbx = confirmBtnX() - sw - 6;
+                boolean saveHov = mx >= sbx - 2 && mx <= sbx + sw + 2 && my >= bcy && my <= bcy + BTN_H;
+                MacroConfig.drawStyledText(g, font, "save", sbx, bcy + BTN_H / 2 - 4, saveHov ? C_TXT() : C_DIM());
+            }
+
             int lY = listY(), lH = listVisibleH();
             g.enableScissor(panelX, lY, panelX + W, lY + lH);
             int ey = lY - scrollOffset;
@@ -2345,7 +2371,7 @@ public class ClickGui extends Screen {
                         java.util.List<Integer> sorted = new java.util.ArrayList<>(checkedForDelete);
                         sorted.sort(java.util.Collections.reverseOrder());
                         for (int idx : sorted) if (idx < MacroConfig.savedThemes.size()) MacroConfig.savedThemes.remove(idx);
-                        if (checkedForDelete.contains(activeLibraryIndex)) activeLibraryIndex = -1;
+                        if (checkedForDelete.contains(activeLibraryIndex)) { activeLibraryIndex = -1; previewOriginalCode = null; }
                         else {
                             long shifted = checkedForDelete.stream().filter(idx -> idx < activeLibraryIndex).count();
                             activeLibraryIndex = (int)(activeLibraryIndex - shifted);
@@ -2353,6 +2379,21 @@ public class ClickGui extends Screen {
                         MacroConfig.save();
                         checkedForDelete.clear();
                         deleteMode = false;
+                        return true;
+                    }
+                }
+                if (activeLibraryIndex >= 0) {
+                    net.minecraft.client.gui.Font f = Minecraft.getInstance().font;
+                    int sw = f.width("save");
+                    int sbx = confirmBtnX() - sw - 6;
+                    if (mx >= sbx - 2 && mx <= sbx + sw + 2 && my >= bcy && my <= bcy + BTN_H) {
+                        if (activeLibraryIndex < MacroConfig.savedThemes.size()) {
+                            String[] parts = MacroConfig.savedThemes.get(activeLibraryIndex).split("\\|", 2);
+                            String name = parts.length > 0 ? parts[0] : "";
+                            MacroConfig.savedThemes.set(activeLibraryIndex, name + "|" + encodeTheme());
+                            previewOriginalCode = null;
+                            MacroConfig.save();
+                        }
                         return true;
                     }
                 }
@@ -2391,9 +2432,17 @@ public class ClickGui extends Screen {
                                     focusedField = 0;
                                 }
                             } else if (parts.length > 1) {
-                                applyThemeCode(parts[1]);
-                                activeLibraryIndex = i;
-                                MacroConfig.save();
+                                if (activeLibraryIndex == i) {
+                                    revertLibraryPreview();
+                                    MacroConfig.save();
+                                } else {
+                                    if (previewOriginalCode == null) {
+                                        previewOriginalCode = encodeTheme();
+                                    }
+                                    activeLibraryIndex = i;
+                                    applyThemeCode(parts[1]);
+                                    MacroConfig.save();
+                                }
                             }
                         }
                         return true;
@@ -2432,10 +2481,12 @@ public class ClickGui extends Screen {
             String entry = name + "|" + newCode.trim();
             if (editingMode && editingIndex >= 0 && editingIndex < MacroConfig.savedThemes.size()) {
                 MacroConfig.savedThemes.set(editingIndex, entry);
+                if (editingIndex == activeLibraryIndex) previewOriginalCode = null;
                 editingMode = false; editingIndex = -1;
             } else {
                 MacroConfig.savedThemes.add(0, entry);
                 addingNew = false;
+                if (activeLibraryIndex >= 0) activeLibraryIndex++;
             }
             MacroConfig.save();
         }
@@ -2477,6 +2528,7 @@ public class ClickGui extends Screen {
         @Override
         public boolean charTyped(char c, int mods) {
             if (!isFormOpen() || c == '\r' || c == '\n') return false;
+            if ((mods & GLFW.GLFW_MOD_SHIFT) != 0 && c >= 128) return true;
             if (focusedField == 0 && c == ' ') return true;
             appendToFocused(String.valueOf(c));
             return true;
@@ -2510,8 +2562,6 @@ public class ClickGui extends Screen {
 
         @Override
         public SubPanel openSubPanel(int mx, int my, int sw, int sh) {
-            helperTopic = "chatrules";
-            helperTitle = "Chat Rules";
             return new ChatRulesSubPanel(mx, my, sw, sh);
         }
     }
@@ -2603,6 +2653,11 @@ public class ClickGui extends Screen {
             g.fill(panelX, panelY + HDR_H - PANEL_RADIUS, panelX + W, panelY + HDR_H, C_HDR());
             g.fill(panelX + 2, panelY + HDR_H - 1, panelX + W - 2, panelY + HDR_H, C_LINE());
             MacroConfig.drawStyledText(g, font, "Chat Rules", panelX + 5, panelY + HDR_H / 2 - 4, C_TXT());
+            int crQx = panelX + W - 10 - font.width("?") - 4;
+            boolean crQhov = mx >= crQx - 1 && mx <= crQx + font.width("?") + 3 && my >= panelY && my <= panelY + HDR_H;
+            boolean crQactive = "chatrules".equals(helperTopic);
+            if (crQhov || crQactive) fillRoundRect(g, crQx - 1, panelY + 2, font.width("?") + 4, HDR_H - 4, 2, crQactive ? C_ON() : C_HOVER());
+            MacroConfig.drawStyledText(g, font, "?", crQx + 1, panelY + HDR_H / 2 - 4, crQactive || crQhov ? C_TXT() : C_DIM());
             MacroConfig.drawStyledText(g, font, "v", panelX + W - 10, panelY + HDR_H / 2 - 4, C_DIM());
 
             // Rule list with scissor
@@ -2754,6 +2809,16 @@ public class ClickGui extends Screen {
         public boolean mouseClicked(int mx, int my, int btn, net.minecraft.client.gui.Font font) {
             // Header drag start
             if (mx >= panelX && mx <= panelX + W && my >= panelY && my <= panelY + HDR_H) {
+                net.minecraft.client.gui.Font f = Minecraft.getInstance().font;
+                int crQx = panelX + W - 10 - f.width("?") - 4;
+                if (mx >= crQx - 1 && mx <= crQx + f.width("?") + 3) {
+                    if ("chatrules".equals(helperTopic)) {
+                        helperTopic = null; helperTitle = null; helperScrollOffset = 0;
+                    } else {
+                        helperTopic = "chatrules"; helperTitle = "Chat Rules"; helperScrollOffset = 0;
+                    }
+                    return true;
+                }
                 dragging = true;
                 dragOffX = mx - panelX;
                 dragOffY = my - panelY;
@@ -2934,6 +2999,7 @@ public class ClickGui extends Screen {
         public boolean charTyped(char c, int mods) {
             if (!isEditing()) return false;
             if (c == '\r' || c == '\n') return true;
+            if ((mods & GLFW.GLFW_MOD_SHIFT) != 0 && c >= 128) return true;
             appendToFocused(String.valueOf(c));
             return true;
         }
@@ -3368,7 +3434,10 @@ public class ClickGui extends Screen {
             if (c != null) { value += c; return true; }
             return false;
         }
-        @Override public boolean charTyped(char c, int mods) { value += c; return true; }
+        @Override public boolean charTyped(char c, int mods) {
+            if ((mods & GLFW.GLFW_MOD_SHIFT) != 0 && c >= 128) return true;
+            value += c; return true;
+        }
         @Override public void commit() { setter.accept(value); }
     }
 
@@ -3717,6 +3786,7 @@ public class ClickGui extends Screen {
         }
         @Override public boolean charTyped(char c, int mods) {
             if (c == '\r') return true;
+            if ((mods & GLFW.GLFW_MOD_SHIFT) != 0 && c >= 128) return true;
             insertText(String.valueOf(c)); ensureCursorVisible(Minecraft.getInstance().font); return true;
         }
         @Override public void commit() {
