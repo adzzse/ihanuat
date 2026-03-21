@@ -152,9 +152,6 @@ public class InventoryTracker {
                 if (lastCultivatingValue != -1 && newValue > lastCultivatingValue) {
                     long delta = newValue - lastCultivatingValue;
                     if (delta <= ItemConstants.MAX_CULTIVATING_DELTA && currentFarmedCrop != null) {
-                        if (MacroConfig.showDebug) {
-                            ClientUtils.sendDebugMessage(client, "Cultivating +" + delta + " -> " + currentFarmedCrop);
-                        }
                         if (currentFarmedCrop.equalsIgnoreCase("Wheat")
                                 || currentFarmedCrop.equalsIgnoreCase("Seeds")) {
                             // Ratio 1 Wheat : 1.5 Seeds (Total 2.5)

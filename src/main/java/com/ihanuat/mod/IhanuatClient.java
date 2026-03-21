@@ -534,6 +534,33 @@ public class IhanuatClient implements ClientModInitializer {
                             if (MacroWorkerThread.shouldAbortTask(client, MacroState.State.FARMING)) {
                                 return;
                             }
+
+                            // ── Sack detection: open /sacks to check for Agronomy Sack ──
+                            client.execute(() -> com.ihanuat.mod.modules.profitTracker.SackTracker.startSackDetection(client));
+                            long sackTimeout = System.currentTimeMillis() + 5000;
+                            while (!com.ihanuat.mod.modules.profitTracker.SackTracker.sackDetectionComplete
+                                    && System.currentTimeMillis() < sackTimeout) {
+                                MacroWorkerThread.sleep(100);
+                                if (MacroWorkerThread.shouldAbortTask(client, MacroState.State.FARMING)) {
+                                    return;
+                                }
+                            }
+                            if (!com.ihanuat.mod.modules.profitTracker.SackTracker.sackDetectionComplete) {
+                                // Timeout -- default to InventoryTracker
+                                com.ihanuat.mod.modules.profitTracker.SackTracker.sackDetectionComplete = true;
+                                com.ihanuat.mod.modules.profitTracker.SackTracker.hasAgronomySack = false;
+                                com.ihanuat.mod.modules.profitTracker.SackTracker.isScanningMenu = false;
+                                if (MacroConfig.showDebug) {
+                                    ClientUtils.sendDebugMessage(client,
+                                            "Sack detection timed out, defaulting to InventoryTracker");
+                                }
+                            }
+                            // Wait a moment for the GUI to fully close
+                            MacroWorkerThread.sleep(300);
+                            if (MacroWorkerThread.shouldAbortTask(client, MacroState.State.FARMING)) {
+                                return;
+                            }
+
                             if (PestPrepSwapManager.prepSwappedForCurrentPestCycle
                                     && WardrobeManager.trackedWardrobeSlot != MacroConfig.wardrobeSlotFarming) {
                                 client.execute(
@@ -617,7 +644,13 @@ public class IhanuatClient implements ClientModInitializer {
                 AbstractContainerScreen<?> currentScreen = (AbstractContainerScreen<?>) client.screen;
                 String currentTitle = currentScreen.getTitle().getString().toLowerCase();
                 lastScreenWasBoosterCookie = currentTitle.equals("booster cookie");
-                GearManager.handleWardrobeMenu(client, currentScreen);
+                // ── Sack detection: scan the Sack of Sacks GUI ──
+                if (com.ihanuat.mod.modules.profitTracker.SackTracker.isScanningMenu
+                        && currentTitle.contains("sack of sacks")) {
+                    com.ihanuat.mod.modules.profitTracker.SackTracker.handleSackMenu(client, currentScreen);
+                }
+                if (client.screen == currentScreen)
+                    GearManager.handleWardrobeMenu(client, currentScreen);
                 if (client.screen == currentScreen)
                     GearManager.handleEquipmentMenu(client, currentScreen);
                 if (client.screen == currentScreen)

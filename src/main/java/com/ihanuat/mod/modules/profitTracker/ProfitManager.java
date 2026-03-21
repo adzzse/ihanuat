@@ -511,6 +511,7 @@ public class ProfitManager {
         spraySessionQuantity = 0;
         PetXpTracker.reset();
         InventoryTracker.reset();
+        SackTracker.reset();
         ChatParser.setLastBazaarSprayBuyTime(0);
         markHudDirty("session");
     }
@@ -540,7 +541,18 @@ public class ProfitManager {
             return;
         }
 
-        InventoryTracker.update(client);
+        // Route crop tracking based on sack detection result
+        if (SackTracker.sackDetectionComplete) {
+            if (SackTracker.hasAgronomySack) {
+                SackTracker.update(client);
+            } else {
+                InventoryTracker.update(client);
+            }
+        } else {
+            // Detection still pending -- skip crop tracking this tick
+            // (purse and pet XP still tracked below)
+        }
+
         PetXpTracker.update(client);
         BazaarService.checkAndRefresh();
     }
