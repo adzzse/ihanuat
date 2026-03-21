@@ -12,6 +12,13 @@ public final class ItemConstants {
     private ItemConstants() {}
 
     public static final long MAX_CULTIVATING_DELTA = 10_000L;
+    // Generic tools -- use inventory scanning.
+    public static final Set<String> GENERIC_TOOLS = Set.of(
+            "Basic Gardening Axe", "Advanced Gardening Axe",
+            "Rookie Hoe", "Basic Gardening Hoe", "Advanced Gardening Hoe");
+
+    // Eclipse Hoe -- use world time in InventoryTracker.
+    public static final String ECLIPSE_HOE_CROP = "__ECLIPSE__";
 
     public static final Set<String> CROPS_SET = Set.of(
             "Wheat", "Enchanted Wheat", "Enchanted Hay Bale",
@@ -50,6 +57,25 @@ public final class ItemConstants {
             "Sugar Cane", "Cactus", "Nether Wart", "Cocoa Beans",
             "Red Mushroom", "Brown Mushroom",
             "Sunflower", "Moonflower", "Wild Rose", "Seeds");
+
+    /**
+     * Maps a keyword found in hoe display names to the base crop it farms.
+     * Checked in order via {@code String.contains()} on the stripped hoe name.
+     */
+    public static final Map<String, String> HOE_CROP_MAP = Map.ofEntries(
+            Map.entry("Wheat Hoe", "Wheat"),
+            Map.entry("Potato Hoe", "Potato"),
+            Map.entry("Carrot Hoe", "Carrot"),
+            Map.entry("Melon Dicer", "Melon Slice"),
+            Map.entry("Pumpkin Dicer", "Pumpkin"),
+            Map.entry("Cane Hoe", "Sugar Cane"),
+            Map.entry("Sugar Cane Hoe", "Sugar Cane"),
+            Map.entry("Cactus Knife", "Cactus"),
+            Map.entry("Fungi Cutter", "Red Mushroom"),
+            Map.entry("Cocoa Chopper", "Cocoa Beans"),
+            Map.entry("Nether Warts Hoe", "Nether Wart"),
+            Map.entry("Eclipse Hoe", ECLIPSE_HOE_CROP),
+            Map.entry("Wild Rose Hoe", "Wild Rose"));
 
     public static final Map<String, Double> TRACKED_ITEMS = Map.ofEntries(
             // Crops

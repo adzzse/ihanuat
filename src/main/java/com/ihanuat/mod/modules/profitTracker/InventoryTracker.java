@@ -32,42 +32,66 @@ public class InventoryTracker {
         if (client.player == null)
             return;
 
-        // 1. Detect which crop increased in inventory
-        String detectedCrop = null;
-        long maxIncrease = 0;
+        // 1. Detect crop type from the held hoe
+        ItemStack held = client.player.getMainHandItem();
+        if (held != null && !held.isEmpty()) {
+            String heldName = ClientUtils.stripColor(held.getHoverName().getString()).trim();
+            boolean isGenericTool = ItemConstants.GENERIC_TOOLS.stream().anyMatch(heldName::contains);
 
-        Map<String, Long> currentCounts = new LinkedHashMap<>();
-        for (int i = 0; i < 36; i++) {
-            ItemStack stack = client.player.getInventory().getItem(i);
-            if (stack == null || stack.isEmpty())
-                continue;
-            String name = ClientUtils.stripColor(stack.getHoverName().getString()).trim();
-            if (ItemConstants.BASE_CROPS.contains(name)) {
-                currentCounts.put(name, currentCounts.getOrDefault(name, 0L) + stack.getCount());
-            }
-        }
+            if (isGenericTool) {
+                // Fallback: scan inventory for the crop with the largest increase
+                Map<String, Long> currentCounts = new LinkedHashMap<>();
+                for (int i = 0; i < 36; i++) {
+                    ItemStack stack = client.player.getInventory().getItem(i);
+                    String name = ClientUtils.stripColor(stack.getHoverName().getString()).trim();
+                    if (ItemConstants.BASE_CROPS.contains(name)) {
+                        currentCounts.put(name, currentCounts.getOrDefault(name, 0L) + stack.getCount());
+                    }
+                }
+                String detectedCrop = null;
+                long maxIncrease = 0;
+                for (Map.Entry<String, Long> entry : currentCounts.entrySet()) {
+                    String name = entry.getKey();
+                    long count = entry.getValue();
+                    long prev = prevInventoryCounts.getOrDefault(name, 0L);
+                    if (count > prev) {
+                        long diff = count - prev;
+                        if (diff > maxIncrease) {
+                            maxIncrease = diff;
+                            detectedCrop = name;
+                        }
+                    }
+                }
+                prevInventoryCounts.clear();
+                prevInventoryCounts.putAll(currentCounts);
 
-        for (Map.Entry<String, Long> entry : currentCounts.entrySet()) {
-            String name = entry.getKey();
-            long count = entry.getValue();
-            long prev = prevInventoryCounts.getOrDefault(name, 0L);
-            if (count > prev) {
-                long diff = count - prev;
-                if (diff > maxIncrease) {
-                    maxIncrease = diff;
-                    detectedCrop = name;
+                if (detectedCrop != null) {
+                    if (!detectedCrop.equals(currentFarmedCrop) && MacroConfig.showDebug) {
+                        ClientUtils.sendDebugMessage(client, "Crop detected (inv scan): " + detectedCrop + " (tool: " + heldName + ")");
+                    }
+                    currentFarmedCrop = detectedCrop;
+                }
+            } else {
+                // Specific hoe: look up crop from hoe name
+                for (Map.Entry<String, String> entry : ItemConstants.HOE_CROP_MAP.entrySet()) {
+                    if (heldName.contains(entry.getKey())) {
+                        String crop = entry.getValue();
+                        if (ItemConstants.ECLIPSE_HOE_CROP.equals(crop) && client.level != null) {
+                        // Day (0-12000) = Sunflower, Night (12000-24000) = Moonflower
+                            long timeOfDay = client.level.getDayTime() % 24000L;
+                            crop = (timeOfDay < 12000L) ? "Sunflower" : "Moonflower";
+                        }
+                        if (!crop.equals(currentFarmedCrop) && MacroConfig.showDebug) {
+                            ClientUtils.sendDebugMessage(client, "Crop detected: " + crop + " (hoe: " + heldName + ")");
+                        }
+                        currentFarmedCrop = crop;
+                        break;
+                    }
                 }
             }
         }
-        prevInventoryCounts.clear();
-        prevInventoryCounts.putAll(currentCounts);
-
-        if (detectedCrop != null) {
-            currentFarmedCrop = detectedCrop;
-        }
 
         // 2. Track Cultivating counter on held item
-        ItemStack held = client.player.getMainHandItem();
         if (held != null && !held.isEmpty()) {
             long newValue = -1;
 
