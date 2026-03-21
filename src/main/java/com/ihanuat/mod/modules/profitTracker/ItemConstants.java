@@ -165,8 +165,8 @@ public final class ItemConstants {
             Map.entry("Pumpkin", "PUMPKIN"), Map.entry("Enchanted Pumpkin", "ENCHANTED_PUMPKIN"), Map.entry("Polished Pumpkin", "POLISHED_PUMPKIN"),
             Map.entry("Sugar Cane", "SUGAR_CANE"), Map.entry("Enchanted Sugar", "ENCHANTED_SUGAR"), Map.entry("Enchanted Sugar Cane", "ENCHANTED_SUGAR_CANE"),
             Map.entry("Cactus", "CACTUS"), Map.entry("Enchanted Cactus Green", "ENCHANTED_CACTUS_GREEN"), Map.entry("Enchanted Cactus", "ENCHANTED_CACTUS"),
-            Map.entry("Red Mushroom", "MUSHROOM_RED"), Map.entry("Enchanted Red Mushroom", "ENCHANTED_RED_MUSHROOM"), Map.entry("Enchanted Red Mushroom Block", "ENCHANTED_HUGE_MUSHROOM_2"),
-            Map.entry("Brown Mushroom", "MUSHROOM_COLLECTION"), Map.entry("Enchanted Brown Mushroom", "ENCHANTED_BROWN_MUSHROOM"), Map.entry("Enchanted Brown Mushroom Block", "ENCHANTED_HUGE_MUSHROOM_1"),
+            Map.entry("Red Mushroom", "RED_MUSHROOM"), Map.entry("Enchanted Red Mushroom", "ENCHANTED_RED_MUSHROOM"), Map.entry("Enchanted Red Mushroom Block", "ENCHANTED_HUGE_MUSHROOM_2"),
+            Map.entry("Brown Mushroom", "BROWN_MUSHROOM"), Map.entry("Enchanted Brown Mushroom", "ENCHANTED_BROWN_MUSHROOM"), Map.entry("Enchanted Brown Mushroom Block", "ENCHANTED_HUGE_MUSHROOM_1"),
             Map.entry("Cocoa Beans", "INK_SACK"), Map.entry("Enchanted Cocoa Beans", "ENCHANTED_COCOA"), Map.entry("Enchanted Cookie", "ENCHANTED_COOKIE"),
             Map.entry("Nether Wart", "NETHER_STALK"), Map.entry("Enchanted Nether Wart", "ENCHANTED_NETHER_STALK"), Map.entry("Mutant Nether Wart", "MUTANT_NETHER_STALK"),
             Map.entry("Sunflower", "DOUBLE_PLANT"), Map.entry("Enchanted Sunflower", "ENCHANTED_SUNFLOWER"), Map.entry("Compacted Sunflower", "COMPACTED_SUNFLOWER"),
@@ -219,7 +219,7 @@ public final class ItemConstants {
             Map.entry("Thunderling", "THUNDERLING"), Map.entry("Turtlellini", "TURTLELLINI"),
             Map.entry("Zombud", "ZOMBUD"), Map.entry("All-in Aloe", "ALL_IN_ALOE"),
             Map.entry("Devourer", "DEVOURER"), Map.entry("Glasscorn", "GLASSCORN"),
-            Map.entry("Godseed", "GODSEED"), Map.entry("Jerryflower.", "JERRYFLOWER"),
+            Map.entry("Godseed", "GODSEED"),
             Map.entry("Phantomleaf", "PHANTOMLEAF"), Map.entry("Timestalk", "TIMESTALK"),
 
             Map.entry("Tool EXP Capsule", "TOOL_EXP_CAPSULE"),
@@ -259,7 +259,7 @@ public final class ItemConstants {
             Map.entry("Pet Cake", "PET_CAKE"),
             Map.entry("Fine Flour", "FINE_FLOUR"),
             Map.entry("Arachne Fragment", "ARACHNE_FRAGMENT"),
-            
+
             // AH Items Mappings
             Map.entry("Biofuel", "BIOFUEL"),
             Map.entry("Farming Exp Boost", "PET_ITEM_FARMING_SKILL_BOOST_UNCOMMON"),
