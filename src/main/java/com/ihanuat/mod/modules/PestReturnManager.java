@@ -92,12 +92,12 @@ public class PestReturnManager {
                             "Finisher (Visitor): stability reached, transitioning to VISITING.");
                     ClientUtils.sendDebugMessage(client,
                             "Wardrobe swap done, now triggering visitor macro. Next state: VISITING");
+                    PestManager.isCleaningInProgress = false;
                     MacroStateManager.setCurrentState(MacroState.State.VISITING);
                     ClientUtils.sendDebugMessage(client, "Stopping script: Visitor threshold reached");
                     com.ihanuat.mod.util.CommandUtils.stopScript(client, 250);
                     ClientUtils.sendDebugMessage(client, "Starting visitor macro script");
                     com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:visitor", 0);
-                    PestManager.isCleaningInProgress = false;
                     client.player.displayClientMessage(
                             Component.literal("§ePest cleaner finished (visitors)."), false);
                     return;
