@@ -14,8 +14,8 @@ public final class ItemConstants {
     public static final long MAX_CULTIVATING_DELTA = 10_000L;
     // Generic tools -- use inventory scanning.
     public static final Set<String> GENERIC_TOOLS = Set.of(
-            "Basic Gardening Axe", "Advanced Gardening Axe",
-            "Rookie Hoe", "Basic Gardening Hoe", "Advanced Gardening Hoe");
+            "Gardening Axe",
+            "Rookie Hoe", "Gardening Hoe");
 
     // Eclipse Hoe -- use world time in InventoryTracker.
     public static final String ECLIPSE_HOE_CROP = "__ECLIPSE__";

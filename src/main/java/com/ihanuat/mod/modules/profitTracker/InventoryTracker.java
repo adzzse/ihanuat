@@ -12,6 +12,7 @@ import net.minecraft.world.item.component.CustomData;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tracks crop yields via the Cultivating enchantment counter on the held tool,
@@ -20,9 +21,16 @@ import java.util.Map;
 public class InventoryTracker {
 
     private static final Map<String, Long> prevInventoryCounts = new LinkedHashMap<>();
+    //60 ticks confirmation window.
+    private static final Map<String, Long> accumulatedDeltas = new LinkedHashMap<>();
+    private static final Set<String> MUSHROOM_NAMES = Set.of("Red Mushroom", "Brown Mushroom");
+    private static final int CONFIRMATION_TICKS = 60;
+
     private static long lastCultivatingValue = -1;
     private static String currentFarmedCrop = "Wheat";
     private static long lastPurseBalance = -1;
+    private static int confirmationTickCounter = 0;
+    private static boolean cropConfirmed = false;
 
     /**
      * Called every tick from ProfitManager.update().
@@ -39,7 +47,7 @@ public class InventoryTracker {
             boolean isGenericTool = ItemConstants.GENERIC_TOOLS.stream().anyMatch(heldName::contains);
 
             if (isGenericTool) {
-                // Fallback: scan inventory for the crop with the largest increase
+                // Accumulate inventory deltas over a 60 ticks window
                 Map<String, Long> currentCounts = new LinkedHashMap<>();
                 for (int i = 0; i < 36; i++) {
                     ItemStack stack = client.player.getInventory().getItem(i);
@@ -48,28 +56,63 @@ public class InventoryTracker {
                         currentCounts.put(name, currentCounts.getOrDefault(name, 0L) + stack.getCount());
                     }
                 }
-                String detectedCrop = null;
-                long maxIncrease = 0;
-                for (Map.Entry<String, Long> entry : currentCounts.entrySet()) {
-                    String name = entry.getKey();
-                    long count = entry.getValue();
-                    long prev = prevInventoryCounts.getOrDefault(name, 0L);
-                    if (count > prev) {
-                        long diff = count - prev;
-                        if (diff > maxIncrease) {
-                            maxIncrease = diff;
-                            detectedCrop = name;
+
+                // On first tick, just snapshot; on subsequent ticks, accumulate deltas
+                if (!prevInventoryCounts.isEmpty()) {
+                    for (Map.Entry<String, Long> entry : currentCounts.entrySet()) {
+                        String name = entry.getKey();
+                        long count = entry.getValue();
+                        long prev = prevInventoryCounts.getOrDefault(name, 0L);
+                        if (count > prev) {
+                            accumulatedDeltas.merge(name, count - prev, Long::sum);
                         }
                     }
                 }
                 prevInventoryCounts.clear();
                 prevInventoryCounts.putAll(currentCounts);
 
-                if (detectedCrop != null) {
-                    if (!detectedCrop.equals(currentFarmedCrop) && MacroConfig.showDebug) {
-                        ClientUtils.sendDebugMessage(client, "Crop detected (inv scan): " + detectedCrop + " (tool: " + heldName + ")");
+                confirmationTickCounter++;
+
+                // After 3 seconds, analyze accumulated deltas and confirm the crop
+                if (confirmationTickCounter >= CONFIRMATION_TICKS && !cropConfirmed) {
+                    if (!accumulatedDeltas.isEmpty()) {
+                        // Separate mushroom vs non-mushroom gains
+                        String bestNonMushroom = null;
+                        long bestNonMushroomDelta = 0;
+                        String bestMushroom = null;
+                        long bestMushroomDelta = 0;
+
+                        for (Map.Entry<String, Long> entry : accumulatedDeltas.entrySet()) {
+                            if (MUSHROOM_NAMES.contains(entry.getKey())) {
+                                if (entry.getValue() > bestMushroomDelta) {
+                                    bestMushroomDelta = entry.getValue();
+                                    bestMushroom = entry.getKey();
+                                }
+                            } else {
+                                if (entry.getValue() > bestNonMushroomDelta) {
+                                    bestNonMushroomDelta = entry.getValue();
+                                    bestNonMushroom = entry.getKey();
+                                }
+                            }
+                        }
+
+                        // If non-mushroom crop detected, pick that (mushroom is from Mooshroom Cow)
+                        // If only mushroom, pick mushroom
+                        String confirmed = (bestNonMushroom != null) ? bestNonMushroom : bestMushroom;
+                        if (confirmed != null) {
+                            if (MacroConfig.showDebug) {
+                                ClientUtils.sendDebugMessage(client,
+                                        "Crop confirmed (3s scan): " + confirmed + " | deltas: " + accumulatedDeltas);
+                            }
+                            currentFarmedCrop = confirmed;
+                            cropConfirmed = true;
+                        }
+                    } else if (MacroConfig.showDebug) {
+                        ClientUtils.sendDebugMessage(client, "No crop deltas after 3s, retrying...");
                     }
-                    currentFarmedCrop = detectedCrop;
+                    // Reset for next window
+                    accumulatedDeltas.clear();
+                    confirmationTickCounter = 0;
                 }
             } else {
                 // Specific hoe: look up crop from hoe name
@@ -77,7 +120,7 @@ public class InventoryTracker {
                     if (heldName.contains(entry.getKey())) {
                         String crop = entry.getValue();
                         if (ItemConstants.ECLIPSE_HOE_CROP.equals(crop) && client.level != null) {
-                        // Day (0-12000) = Sunflower, Night (12000-24000) = Moonflower
+                            // Day (0-12000) = Sunflower, Night (12000-24000) = Moonflower
                             long timeOfDay = client.level.getDayTime() % 24000L;
                             crop = (timeOfDay < 12000L) ? "Sunflower" : "Moonflower";
                         }
@@ -85,6 +128,7 @@ public class InventoryTracker {
                             ClientUtils.sendDebugMessage(client, "Crop detected: " + crop + " (hoe: " + heldName + ")");
                         }
                         currentFarmedCrop = crop;
+                        cropConfirmed = true;
                         break;
                     }
                 }
@@ -108,6 +152,9 @@ public class InventoryTracker {
                 if (lastCultivatingValue != -1 && newValue > lastCultivatingValue) {
                     long delta = newValue - lastCultivatingValue;
                     if (delta <= ItemConstants.MAX_CULTIVATING_DELTA && currentFarmedCrop != null) {
+                        if (MacroConfig.showDebug) {
+                            ClientUtils.sendDebugMessage(client, "Cultivating +" + delta + " -> " + currentFarmedCrop);
+                        }
                         if (currentFarmedCrop.equalsIgnoreCase("Wheat")
                                 || currentFarmedCrop.equalsIgnoreCase("Seeds")) {
                             // Ratio 1 Wheat : 1.5 Seeds (Total 2.5)
@@ -141,6 +188,9 @@ public class InventoryTracker {
                             MacroStateManager.getCurrentState() != MacroState.State.AUTOSELLING) {
                         long delta = currentPurse - lastPurseBalance;
                         if (delta <= 50000) {
+                            if (MacroConfig.showDebug) {
+                                ClientUtils.sendDebugMessage(client, "Purse +" + delta);
+                            }
                             ProfitManager.addDrop("Purse", delta);
                         } else if (MacroConfig.showDebug) {
                             ClientUtils.sendDebugMessage(client, "Dismissed large purse change: +" + delta);
@@ -157,5 +207,10 @@ public class InventoryTracker {
      */
     public static void reset() {
         lastPurseBalance = -1;
+        prevInventoryCounts.clear();
+        accumulatedDeltas.clear();
+        confirmationTickCounter = 0;
+        cropConfirmed = false;
     }
 }
+
