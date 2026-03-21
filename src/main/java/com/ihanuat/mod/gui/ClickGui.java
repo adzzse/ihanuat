@@ -2729,7 +2729,7 @@ public class ClickGui extends Screen {
                 int delX = panelX + W - PAD - 18;
                 boolean delHov = mx >= delX && mx <= delX + 16 && my >= ey + 1 && my < ey + ROW_H - 1;
                 fillRoundRect(g, delX, ey + 2, 16, ROW_H - 4, 2, delHov ? 0xFFCC2222 : 0xFF441111);
-                MacroConfig.drawStyledText(g, font, "X", delX + 4, ey + (ROW_H - 8) / 2, C_TXT());
+                MacroConfig.drawStyledText(g, font, "X", delX + (16 - font.width("X")) / 2, ey + (ROW_H - 8) / 2, C_TXT());
 
                 ey += ROW_H + PAD;
             }

@@ -54,37 +54,11 @@ public class IhanuatClient implements ClientModInitializer {
     private static boolean hasCheckedPersistenceOnJoin = false;
     private static boolean hasCheckedUpdate = false;
     private static long lastStashPickupTime = 0;
-    private static final long STASH_PICKUP_MIN_MS = 3300;
-    private static final long STASH_PICKUP_MAX_MS = 3700;
-    private static long currentStashPickupDelay = STASH_PICKUP_MIN_MS;
-    private static void refreshStashPickupDelay() {
-        currentStashPickupDelay = STASH_PICKUP_MIN_MS
-                + (long)(Math.random() * (STASH_PICKUP_MAX_MS - STASH_PICKUP_MIN_MS + 1));
-    }
+    private static final long STASH_PICKUP_DELAY_MS = 3300;
     private static long lastRewarpTime = 0;
     private static final long REWARP_COOLDOWN_MS = 5000;
 
     private static boolean isPickingUpStash = false;
-    private static boolean hasPendingStash = false;
-    private static boolean lastScreenWasBoosterCookie = false;
-    /**
-     * Previously the only arm path for stash pickup; now a no-op in practice.
-     * Stash pickup is armed directly from the chat handler when "stashed" is detected,
-     * so hasPendingStash will always be false by the time autosell completes.
-     * Kept to avoid breaking BoosterCookieManager's call site.
-     */
-    public static void armStashPickupAfterAutosell() {
-        if (!MacroConfig.autoStashManager) return;
-        if (!hasPendingStash) return; // already armed from chat handler; nothing to do
-        hasPendingStash = false;
-        isPickingUpStash = true;
-        lastStashPickupTime = 0;
-        refreshStashPickupDelay();
-        if (MacroConfig.showDebug) {
-            ClientUtils.sendDebugMessage(Minecraft.getInstance(),
-                    "Stash pickup armed after autosell completed.");
-        }
-    }
     private static String lastScannedVisitorTitle = null;
     private static long lastUnexpectedRecoveryTriggerMs = 0;
     private static final long UNEXPECTED_RECOVERY_COOLDOWN_MS = 7000;
@@ -191,8 +165,6 @@ public class IhanuatClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) {
                 hasCheckedPersistenceOnJoin = false;
-                isPickingUpStash = false;
-                hasPendingStash = false;
 
                 // Failsafe: if macro is still marked active during an unexpected disconnect,
                 // force RECOVERING and ensure reconnect is scheduled.
@@ -463,31 +435,12 @@ public class IhanuatClient implements ClientModInitializer {
                     }
                 }
 
-                if (lowerText.contains("stashed")) {
-                    // Arm stash pickup directly — no longer gated on autosell completing.
-                    // The old flow relied on armStashPickupAfterAutosell() being called from
-                    // BoosterCookieManager, which only runs if auto-booster-cookie is enabled
-                    // and the menu is open. Without that path, hasPendingStash would sit true
-                    // forever and /pickupstash would never fire.
-                    if (MacroConfig.autoStashManager) {
-                        hasPendingStash = false;
-                        isPickingUpStash = true;
-                        lastStashPickupTime = System.currentTimeMillis() + 2000; // 2s grace before first attempt
-                        refreshStashPickupDelay();
-                    }
+                if (lowerText.contains("stashed away!")) {
+                    isPickingUpStash = true;
                 }
 
                 if (lowerText.contains("your stash isn't holding any items or materials!")) {
                     isPickingUpStash = false;
-                    hasPendingStash = false;
-                }
-
-                // If /pickupstash returns "Unknown command", we've been warped out of
-                // Skyblock (e.g. to lobby/limbo). Stop the sequence immediately so it
-                // doesn't keep firing the command in a non-SB world.
-                if (lowerText.contains("unknown command") && lowerText.contains("pickupstash")) {
-                    isPickingUpStash = false;
-                    hasPendingStash = false;
                 }
 
                 ProfitManager.handleChatMessage(message);
@@ -636,8 +589,6 @@ public class IhanuatClient implements ClientModInitializer {
 
             if (client.screen instanceof AbstractContainerScreen) {
                 AbstractContainerScreen<?> currentScreen = (AbstractContainerScreen<?>) client.screen;
-                String currentTitle = currentScreen.getTitle().getString().toLowerCase();
-                lastScreenWasBoosterCookie = currentTitle.equals("booster cookie");
                 GearManager.handleWardrobeMenu(client, currentScreen);
                 if (client.screen == currentScreen)
                     GearManager.handleEquipmentMenu(client, currentScreen);
@@ -649,11 +600,6 @@ public class IhanuatClient implements ClientModInitializer {
                     BookCombineManager.handleAnvilMenu(client, currentScreen);
                 if (client.screen == currentScreen)
                     JunkManager.handleInventoryMenu(client, currentScreen);
-            } else {
-                if (lastScreenWasBoosterCookie) {
-                    BoosterCookieManager.onMenuClosed();
-                }
-                lastScreenWasBoosterCookie = false;
             }
 
             GeorgeManager.update(client);
@@ -724,9 +670,8 @@ public class IhanuatClient implements ClientModInitializer {
                 if (client.screen == null && state != MacroState.State.VISITING
                     && state != MacroState.State.CLEANING && state != MacroState.State.SPRAYING) {
                     long now = System.currentTimeMillis();
-                    if (now - lastStashPickupTime >= currentStashPickupDelay) {
+                    if (now - lastStashPickupTime >= STASH_PICKUP_DELAY_MS) {
                         lastStashPickupTime = now;
-                        refreshStashPickupDelay(); // compute delay for NEXT interval
                         client.player.connection.sendCommand("pickupstash");
                     }
                 }
