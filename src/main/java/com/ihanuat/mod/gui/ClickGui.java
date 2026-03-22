@@ -683,10 +683,12 @@ public class ClickGui extends Screen {
         Panel p = makePanel("Dynamic Rest", pos);
         p.add(intField("Farming Min", "restScriptingTimeMin", () -> MacroConfig.restScriptingTimeMin, v -> {
             MacroConfig.restScriptingTimeMin = Math.max(1, v);
+            com.ihanuat.mod.modules.DynamicRestManager.onConfigChanged();
             save();
         }, "min"));
         p.add(intField("Farming Max", "restScriptingTimeMax", () -> MacroConfig.restScriptingTimeMax, v -> {
             MacroConfig.restScriptingTimeMax = Math.max(1, v);
+            com.ihanuat.mod.modules.DynamicRestManager.onConfigChanged();
             save();
         }, "min"));
         p.add(intField("Break Min", "restBreakTimeMin", () -> MacroConfig.restBreakTimeMin, v -> {

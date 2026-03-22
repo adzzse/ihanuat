@@ -16,7 +16,9 @@ public class SuperCrafter {
     private static int currentCropIndex = 0;
     private static int craftingStage = 0;
     private static long lastActionTime = 0;
-    private static final long ACTION_DELAY_MS = 500;
+    private static final long ACTION_DELAY_MS = 200;
+    private static final long GUI_OPEN_DELAY_MS = 250;
+    private static long guiOpenedAtMs = 0;
 
     private static List<String> getCrops() {
         return MacroConfig.superCraftCrops;
@@ -29,6 +31,7 @@ public class SuperCrafter {
         currentCropIndex = 0;
         craftingStage = 0;
         lastActionTime = 0;
+        guiOpenedAtMs = 0;
         ClientUtils.sendDebugMessage(client, "SuperCrafter: Starting for " + getCrops().size() + " crops.");
         sendRecipeCommand(client);
     }
@@ -43,6 +46,7 @@ public class SuperCrafter {
         currentCropIndex = 0;
         craftingStage = 0;
         lastActionTime = 0;
+        guiOpenedAtMs = 0;
     }
 
     public static void handleRecipeGui(Minecraft client, AbstractContainerScreen<?> screen) {
@@ -56,6 +60,15 @@ public class SuperCrafter {
 
         if (!title.contains(currentCrop)) {
             ClientUtils.sendDebugMessage(client, "SuperCrafter: Waiting for GUI - " + currentCrop + " (got: " + title + ")");
+            guiOpenedAtMs = 0;
+            return;
+        }
+
+        if (guiOpenedAtMs == 0) {
+            guiOpenedAtMs = now;
+        }
+
+        if (now - guiOpenedAtMs < GUI_OPEN_DELAY_MS) {
             return;
         }
 
@@ -112,6 +125,7 @@ public class SuperCrafter {
                 ClientUtils.sendDebugMessage(client, "SuperCrafter: Done with " + currentCrop + ". Closing GUI.");
                 client.setScreen(null);
                 lastActionTime = now;
+                guiOpenedAtMs = 0;
                 currentCropIndex++;
                 craftingStage = 0;
 

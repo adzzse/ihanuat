@@ -22,7 +22,9 @@ import net.minecraft.network.chat.Component;
  *    for safe execution — it will wait until the current pest/visitor sequence
  *    finishes):
  *    Stage 0 — send /setspawn, stop the macro script, force-release keys.
- *    Stage 1 — disconnect from the server (intentional) and schedule reconnect
+ *    Stage 1 — wait for spawn confirmation or fallback timeout, then optionally supercraft.
+ *    Stage 2 — 1-second buffer before disconnecting.
+ *    Stage 3 — disconnect from the server (intentional) and schedule reconnect
  *    via ReconnectScheduler for the configured break duration.
  * 3. After the break the existing reconnect → recovery path runs normally,
  *    which warps back to the Garden and restarts the script.
@@ -123,6 +125,32 @@ public class DynamicRestManager {
         return scheduledDurationMs;
     }
 
+    // ── Config change hook ───────────────────────────────────────────────────
+
+    /**
+     * Call this whenever restScriptingTimeMin or restScriptingTimeMax changes in the GUI.
+     * Recalculates the trigger time preserving elapsed progress, so the new duration
+     * takes effect immediately without losing time already spent farming.
+     */
+    public static void onConfigChanged() {
+        if (restSequencePending) return;
+
+        boolean timerRunning = nextRestTriggerMs > 0;
+        boolean timerPaused  = pausedRemainingMs >= 0;
+        if (!timerRunning && !timerPaused) return; // timer not started yet
+
+        long minMs = MacroConfig.restScriptingTimeMin * 60L * 1000L;
+        long maxMs = MacroConfig.restScriptingTimeMax * 60L * 1000L;
+        if (maxMs < minMs) maxMs = minMs;
+        scheduledDurationMs = minMs + (long)(new Random().nextDouble() * (maxMs - minMs));
+
+        if (timerRunning) {
+            nextRestTriggerMs = System.currentTimeMillis() + scheduledDurationMs;
+        } else {
+            pausedRemainingMs = scheduledDurationMs;
+        }
+    }
+
     // ── Tick update ──────────────────────────────────────────────────────────
 
     /**
@@ -175,8 +203,6 @@ public class DynamicRestManager {
                     return;
                 }
 
-
-
                 // Stop the farming script, release all keys, /setspawn
                 ClientUtils.sendDebugMessage(client, "Stopping script: Initiating dynamic rest sequence");
                 com.ihanuat.mod.util.CommandUtils.stopScript(client, 0);
@@ -187,9 +213,9 @@ public class DynamicRestManager {
                 }
                 com.ihanuat.mod.util.CommandUtils.initiateSetSpawn(client);
                 MacroStateManager.setCurrentState(MacroState.State.OFF);
-                
+
                 restSequenceStage = 1;
-                //nextStageActionTime = System.currentTimeMillis() + 3000; // Fallback timeout of 3 seconds
+                nextStageActionTime = System.currentTimeMillis() + 1000; // Fallback timeout of 1 second
                 break;
             }
             case 1: {
@@ -212,6 +238,12 @@ public class DynamicRestManager {
                     return; // Still waiting for spawn confirmation
                 }
 
+                // 1-second buffer before disconnecting
+                restSequenceStage = 2;
+                nextStageActionTime = System.currentTimeMillis() + 1000;
+                break;
+            }
+            case 2: {
                 // Disconnect and schedule the reconnect after the break duration
                 long minSecs = MacroConfig.restBreakTimeMin * 60L;
                 long maxSecs = MacroConfig.restBreakTimeMax * 60L;
@@ -238,7 +270,7 @@ public class DynamicRestManager {
                     client.disconnect(new DynamicRestScreen(restEndTimeMs, durationMs), false);
                 });
 
-                restSequenceStage = 2;
+                restSequenceStage = 3;
                 nextStageActionTime = Long.MAX_VALUE; // no further stages needed
                 break;
             }

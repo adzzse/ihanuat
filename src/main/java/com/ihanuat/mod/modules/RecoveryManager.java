@@ -19,6 +19,9 @@ public class RecoveryManager {
     }
 
     public static void update(Minecraft client) {
+        if (client.player == null) 
+            return;
+
         if (MacroStateManager.getCurrentState() != MacroState.State.RECOVERING)
             return;
 
