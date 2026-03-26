@@ -25,6 +25,11 @@ public class MacroConfig {
         NONE, SHADOW, OUTLINE
     }
 
+    // pricing mode for the profit calculator
+    public enum PricingMode {
+        NPC, INSTA_SELL, INSTA_BUY
+    }
+
     // ── Defaults ──────────────────────────────────────────────────────────────
     public static final int DEFAULT_PEST_THRESHOLD = 5;
     public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = true;
@@ -91,6 +96,7 @@ public class MacroConfig {
     public static final boolean DEFAULT_PERSIST_SESSION_TIMER = true;
     public static final boolean DEFAULT_COMPACT_PROFIT_CALCULATOR = false;
     public static final boolean DEFAULT_SHOW_PROFIT_HUD_WHILE_INACTIVE = false;
+    public static final PricingMode DEFAULT_PRICING_MODE = PricingMode.NPC;
     public static final boolean DEFAULT_HIDE_FILTERED_CHAT = true;
     public static final boolean DEFAULT_AUTO_DROP_JUNK = false;
     public static final java.util.List<String> DEFAULT_JUNK_ITEMS = java.util.Arrays.asList(
@@ -184,6 +190,7 @@ public class MacroConfig {
     public static int autosellClickDelay = DEFAULT_AUTOSELL_CLICK_DELAY;
     public static int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
     public static int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
+    public static int postRodReturnDelay = 80; // ms delay after restoring slot
     public static int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
     public static int wardrobePostSwapDelay = DEFAULT_WARDROBE_POST_SWAP_DELAY;
     public static int wardrobeAotvDelay = DEFAULT_WARDROBE_AOTV_DELAY;
@@ -208,6 +215,7 @@ public class MacroConfig {
     public static boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
     public static boolean compactProfitCalculator = DEFAULT_COMPACT_PROFIT_CALCULATOR;
     public static boolean showProfitHudWhileInactive = DEFAULT_SHOW_PROFIT_HUD_WHILE_INACTIVE;
+    public static PricingMode pricingMode = DEFAULT_PRICING_MODE;
     public static boolean hideFilteredChat = DEFAULT_HIDE_FILTERED_CHAT;
     public static boolean autoDropJunk = DEFAULT_AUTO_DROP_JUNK;
     public static java.util.List<String> junkItems = new java.util.ArrayList<>(DEFAULT_JUNK_ITEMS);
@@ -492,6 +500,7 @@ public class MacroConfig {
         d.autosellClickDelay = autosellClickDelay;
         d.equipmentSwapDelay = equipmentSwapDelay;
         d.rodSwapDelay = rodSwapDelay;
+        d.postRodReturnDelay = postRodReturnDelay;
         d.bookCombineDelay = bookCombineDelay;
         d.wardrobePostSwapDelay = wardrobePostSwapDelay;
         d.wardrobeAotvDelay = wardrobeAotvDelay;
@@ -532,6 +541,7 @@ public class MacroConfig {
         d.persistSessionTimer = persistSessionTimer;
         d.compactProfitCalculator = compactProfitCalculator;
         d.showProfitHudWhileInactive = showProfitHudWhileInactive;
+        d.pricingMode = pricingMode;
         d.hideFilteredChat = hideFilteredChat;
         d.autoDropJunk = autoDropJunk;
         d.junkItems = new java.util.ArrayList<>(junkItems);
@@ -619,6 +629,7 @@ public class MacroConfig {
             autosellClickDelay = d.autosellClickDelay;
             equipmentSwapDelay = d.equipmentSwapDelay;
             rodSwapDelay = d.rodSwapDelay;
+            postRodReturnDelay = d.postRodReturnDelay;
             bookCombineDelay = d.bookCombineDelay;
             wardrobePostSwapDelay = Math.max(0, Math.min(2000, d.wardrobePostSwapDelay));
             wardrobeAotvDelay = Math.max(0, Math.min(1000, d.wardrobeAotvDelay));
@@ -668,6 +679,7 @@ public class MacroConfig {
             persistSessionTimer = d.persistSessionTimer;
             compactProfitCalculator = d.compactProfitCalculator;
             showProfitHudWhileInactive = d.showProfitHudWhileInactive;
+            pricingMode = d.pricingMode != null ? d.pricingMode : DEFAULT_PRICING_MODE;
             hideFilteredChat = d.hideFilteredChat;
             autoDropJunk = d.autoDropJunk;
             if (d.junkItems != null) junkItems = new java.util.ArrayList<>(d.junkItems);
@@ -806,6 +818,7 @@ public class MacroConfig {
         int autosellClickDelay = DEFAULT_AUTOSELL_CLICK_DELAY;
         int equipmentSwapDelay = DEFAULT_EQUIPMENT_SWAP_DELAY;
         int rodSwapDelay = DEFAULT_ROD_SWAP_DELAY;
+        int postRodReturnDelay = 80;
         int bookCombineDelay = DEFAULT_BOOK_COMBINE_DELAY;
         int wardrobePostSwapDelay = DEFAULT_WARDROBE_POST_SWAP_DELAY;
         int wardrobeAotvDelay = DEFAULT_WARDROBE_AOTV_DELAY;
@@ -850,6 +863,7 @@ public class MacroConfig {
         boolean persistSessionTimer = DEFAULT_PERSIST_SESSION_TIMER;
         boolean compactProfitCalculator = DEFAULT_COMPACT_PROFIT_CALCULATOR;
         boolean showProfitHudWhileInactive = DEFAULT_SHOW_PROFIT_HUD_WHILE_INACTIVE;
+        PricingMode pricingMode = DEFAULT_PRICING_MODE;
         boolean hideFilteredChat = DEFAULT_HIDE_FILTERED_CHAT;
         boolean autoDropJunk = DEFAULT_AUTO_DROP_JUNK;
         java.util.List<String> junkItems = new java.util.ArrayList<>(DEFAULT_JUNK_ITEMS);
