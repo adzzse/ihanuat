@@ -34,9 +34,7 @@ public class TodayTimeTracker {
     /** Called by MacroStateManager when macro becomes active (leaves OFF/RECOVERING). */
     public static void onMacroStart() {
         checkDayRollover();
-        if (todaySegmentStart == 0) {
-            todaySegmentStart = System.currentTimeMillis();
-        }
+        todaySegmentStart = System.currentTimeMillis();
     }
 
     /** Called by MacroStateManager when macro stops or enters RECOVERING. */

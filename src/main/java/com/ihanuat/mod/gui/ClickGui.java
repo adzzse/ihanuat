@@ -670,10 +670,18 @@ public class ClickGui extends Screen {
             notifyMsg("Session reset!");
         }));
         p.add(button("Reset Daily", () -> {
+            MacroConfig.todayAccumulatedMs = 0;
+            MacroConfig.todayDateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            com.ihanuat.mod.modules.TodayTimeTracker.syncFromConfig();
+            if (MacroStateManager.isMacroRunning()) com.ihanuat.mod.modules.TodayTimeTracker.onMacroStart();
+            MacroConfig.save();
             ProfitManager.resetDaily();
             notifyMsg("Daily reset!");
         }));
         p.add(button("Reset Lifetime", () -> {
+            MacroConfig.lifetimeAccumulated = 0;
+            MacroStateManager.syncFromConfig();
+            MacroConfig.save();
             ProfitManager.resetLifetime();
             notifyMsg("Lifetime reset!");
         }));
@@ -702,6 +710,10 @@ public class ClickGui extends Screen {
         }, "min"));
         p.add(toggle("Show Daily Total", () -> MacroConfig.showTotalToday, v -> {
             MacroConfig.showTotalToday = v;
+            save();
+        }));
+        p.add(toggle("Show Total Farmed", () -> MacroConfig.showTotalFarmed, v -> {
+            MacroConfig.showTotalFarmed = v;
             save();
         }));
         p.add(toggle("Supercraft Before Rest", () -> MacroConfig.superCraftBeforeRest, v -> {
