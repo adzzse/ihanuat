@@ -3,7 +3,6 @@ package com.ihanuat.mod.modules;
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroWorkerThread;
-import com.ihanuat.mod.modules.GearManager;
 import com.ihanuat.mod.util.ClientUtils;
 
 import net.minecraft.client.Minecraft;
@@ -21,6 +20,7 @@ public class PestCleaningSequencer {
 
     public static void startCleaningSequence(Minecraft client, String plot, String currentInfestedPlot,
             int currentPestSessionId) {
+
         if (PestManager.isCleaningInProgress)
             return;
 
@@ -150,10 +150,22 @@ public class PestCleaningSequencer {
                 if (MacroWorkerThread.shouldAbortTask(client))
                     return;
 
+                ClientUtils.sendDebugMessage(client, "Bonus inactive flag: " + PestBonusManager.isBonusInactive);
+
                 if (PestBonusManager.isBonusInactive) {
                     client.player.displayClientMessage(
                             Component.literal("§dBonus is INACTIVE! Triggering Phillip reactivation..."), true);
-                    PestBonusManager.isReactivatingBonus = true;
+                    if (MacroConfig.callPhillipForBonus) {
+                        PestBonusManager.runBonusReactivationSequence(client);
+                    } else {
+                        ClientUtils.sendDebugMessage(client, "Call Phillip for Bonus is disabled — skipping reactivation.");
+                    }
+                    if (MacroWorkerThread.shouldAbortTask(client))
+                        return;
+                    if (PestBonusManager.isBonusInactive) {
+                        ClientUtils.sendDebugMessage(client,
+                                "Bonus still INACTIVE after Phillip wait — continuing sequence anyway.");
+                    }
 
                     if (MacroConfig.autoRodPestSpawn) {
                         ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn (Bonus inactive).");
@@ -161,7 +173,13 @@ public class PestCleaningSequencer {
                         // Swap to farming tool after rod usage.
                         GearManager.swapToFarmingTool(client);
                     }
-                    com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
+                }
+
+
+                if (MacroConfig.spraySinglePlot && SprayonatorManager.needsSpraying) {
+                    ClientUtils.sendDebugMessage(client, "Spray Single Plot: spraying plot before cleaning.");
+                    SprayonatorManager.executeSpraySequence(client);
+                if (MacroWorkerThread.shouldAbortTask(client))
                     return;
                 }
 

@@ -25,6 +25,7 @@ import com.ihanuat.mod.modules.RecoveryManager;
 import com.ihanuat.mod.modules.RestartManager;
 import com.ihanuat.mod.modules.RodManager;
 import com.ihanuat.mod.modules.RotationManager;
+import com.ihanuat.mod.modules.SprayonatorManager;
 import com.ihanuat.mod.modules.SuperCrafter;
 import com.ihanuat.mod.modules.VisitorManager;
 import com.ihanuat.mod.modules.WardrobeManager;
@@ -304,6 +305,10 @@ public class IhanuatClient implements ClientModInitializer {
                     return;
                 }
 
+                if (lowerPlainText.contains("the smell of")) {
+                    SprayonatorManager.needsSpraying = true;
+                }
+
                 boolean isPestCleanerFinishSignal = lowerPlainText.contains("pest cleaner")
                         && lowerPlainText.contains("finished")
                         && !lowerPlainText.contains("sprayed plot")
@@ -446,7 +451,6 @@ public class IhanuatClient implements ClientModInitializer {
                 }
 
                 ProfitManager.handleChatMessage(message);
-                PestManager.handlePhillipMessage(Minecraft.getInstance(), text);
                 com.ihanuat.mod.modules.CropFeverManager.handleChatMessage(Minecraft.getInstance(), plainText);
 
                 com.ihanuat.mod.util.CommandUtils.onChatMessage(plainText);
@@ -486,7 +490,7 @@ public class IhanuatClient implements ClientModInitializer {
                 GeorgeManager.onCallGeorgeSent();
             }
             // Add this:
-            if (command.equalsIgnoreCase("testcraft")) {
+            if (command.equalsIgnoreCase("supercraft")) {
                 SuperCrafter.startSuperCraft(Minecraft.getInstance());
             }
         });
