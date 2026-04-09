@@ -168,19 +168,19 @@ public class PestCleaningSequencer {
                                 "Bonus still INACTIVE after Phillip wait — continuing sequence anyway.");
                     }
 
+                    if (MacroConfig.spraySinglePlot) {
+                        ClientUtils.sendDebugMessage(client, "Spray Single Plot: spraying plot before cleaning.");
+                        SprayonatorManager.executeSpraySequence(client);
+                    if (MacroWorkerThread.shouldAbortTask(client))
+                        return;
+                    }
+
                     if (MacroConfig.autoRodPestSpawn) {
                         ClientUtils.sendDebugMessage(client, "Auto Rod: Triggering rod cast on pest spawn (Bonus inactive).");
                         RodManager.executeRodSequence(client);
                         // Swap to farming tool after rod usage.
                         GearManager.swapToFarmingTool(client);
                     }
-                }
-
-                if (MacroConfig.spraySinglePlot) {
-                    ClientUtils.sendDebugMessage(client, "Spray Single Plot: spraying plot before cleaning.");
-                    SprayonatorManager.executeSpraySequence(client);
-                    if (MacroWorkerThread.shouldAbortTask(client))
-                        return;
                 }
 
                 if (shouldDoAotv) {
