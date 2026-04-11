@@ -1571,7 +1571,7 @@ public class ClickGui extends Screen {
             helperScrollOffset = Math.max(0, helperScrollOffset + (int)(-vScroll * 12));
             return;
         }
-        if (hScroll != 0 || shift) {
+        if (shift) {
             int pan = (int) ((hScroll != 0 ? hScroll : vScroll) * 20);
             for (Panel p : panels) p.x += pan;
             return;
