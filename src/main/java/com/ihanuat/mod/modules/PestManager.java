@@ -15,7 +15,6 @@ public class PestManager {
     public static volatile int currentPestSessionId = 0;
     private static final long PEST_REENTRY_COOLDOWN_MS = 30_000;
     private static final long DEFAULT_NO_PEST_RETURN_DELAY_MS = 10_000;
-    private static final long MANUAL_NO_PEST_RETURN_DELAY_MS = 2500;
     private static long lastZeroPestTime = 0;
     private static volatile int predictedAliveCount = 0;
     private static volatile long lastChatSpawnUpdateMs = 0;
@@ -39,7 +38,7 @@ public class PestManager {
     }
 
     private static long getNoPestReturnDelayMs() {
-        return MacroConfig.manualPestClean ? MANUAL_NO_PEST_RETURN_DELAY_MS : DEFAULT_NO_PEST_RETURN_DELAY_MS;
+        return MacroConfig.manualPestClean ? MacroConfig.manualPestReturnDelay : DEFAULT_NO_PEST_RETURN_DELAY_MS;
     }
 
     public static void reset() {

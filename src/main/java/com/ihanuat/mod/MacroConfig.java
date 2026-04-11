@@ -34,6 +34,8 @@ public class MacroConfig {
     public static final int DEFAULT_PEST_THRESHOLD = 5;
     public static final boolean DEFAULT_AUTO_PEST_ENABLED = true;
     public static final boolean DEFAULT_MANUAL_PEST_CLEAN = false;
+    public static final int DEFAULT_MANUAL_PEST_RETURN_DELAY = 2500;
+    public static final boolean DEFAULT_MANUAL_PEST_ALERT_SOUND = false;
     public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = true;
     public static final int DEFAULT_VISITOR_THRESHOLD = 5;
     public static final boolean DEFAULT_AUTO_WARDROBE_PEST = true;
@@ -165,6 +167,8 @@ public class MacroConfig {
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
     public static boolean autoPestEnabled = DEFAULT_AUTO_PEST_ENABLED;
     public static boolean manualPestClean = DEFAULT_MANUAL_PEST_CLEAN;
+    public static int manualPestReturnDelay = DEFAULT_MANUAL_PEST_RETURN_DELAY;
+    public static boolean manualPestAlertSound = DEFAULT_MANUAL_PEST_ALERT_SOUND;
     public static boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
     public static final int DEFAULT_PEST_CHAT_TRIGGER_DELAY = 0;
     public static int pestChatTriggerDelay = DEFAULT_PEST_CHAT_TRIGGER_DELAY;
@@ -481,6 +485,8 @@ public class MacroConfig {
         d.pestThreshold = pestThreshold;
         d.autoPestEnabled = autoPestEnabled;
         d.manualPestClean = manualPestClean;
+        d.manualPestReturnDelay = manualPestReturnDelay;
+        d.manualPestAlertSound = manualPestAlertSound;
         d.triggerPestOnChat = triggerPestOnChat;
         d.pestChatTriggerDelay = pestChatTriggerDelay;
         d.visitorThreshold = visitorThreshold;
@@ -615,6 +621,8 @@ public class MacroConfig {
             pestThreshold = d.pestThreshold;
             autoPestEnabled = d.autoPestEnabled;
             manualPestClean = d.manualPestClean;
+            manualPestReturnDelay = Math.max(0, Math.min(10000, d.manualPestReturnDelay));
+            manualPestAlertSound = d.manualPestAlertSound;
             triggerPestOnChat = d.triggerPestOnChat;
             pestChatTriggerDelay = d.pestChatTriggerDelay;
             visitorThreshold = d.visitorThreshold;
@@ -809,6 +817,8 @@ public class MacroConfig {
         int pestThreshold = DEFAULT_PEST_THRESHOLD;
         boolean autoPestEnabled = DEFAULT_AUTO_PEST_ENABLED;
         boolean manualPestClean = DEFAULT_MANUAL_PEST_CLEAN;
+        int manualPestReturnDelay = DEFAULT_MANUAL_PEST_RETURN_DELAY;
+        boolean manualPestAlertSound = DEFAULT_MANUAL_PEST_ALERT_SOUND;
         boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
         int pestChatTriggerDelay = 0;
         int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;

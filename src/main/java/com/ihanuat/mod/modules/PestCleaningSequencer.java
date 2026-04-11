@@ -6,7 +6,9 @@ import com.ihanuat.mod.MacroWorkerThread;
 import com.ihanuat.mod.util.ClientUtils;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 
 public class PestCleaningSequencer {
     private static final long SETSPAWN_TO_WARDROBE_COOLDOWN_MS = 1000L;
@@ -194,6 +196,7 @@ public class PestCleaningSequencer {
                 if (MacroConfig.manualPestClean) {
                     ClientUtils.sendDebugMessage(client,
                             "Manual Pest Clean enabled; pausing after setup instead of starting pest cleaner script.");
+                    playManualCleanAlert(client);
                     client.player.displayClientMessage(
                             Component.literal("§eManual Pest Clean: clear the remaining pests manually. The macro will return to garden once no pests remain."),
                             false);
@@ -315,5 +318,20 @@ public class PestCleaningSequencer {
         GearManager.swapToFarmingTool(client);
 
         com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
+    }
+
+    private static void playManualCleanAlert(Minecraft client) {
+        if (!MacroConfig.manualPestAlertSound || client == null) {
+            return;
+        }
+
+        client.execute(() -> {
+            if (client.getSoundManager() == null) {
+                return;
+            }
+
+            client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.15F));
+            client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.35F));
+        });
     }
 }
