@@ -14,6 +14,8 @@ public class PestManager {
     public static volatile String currentInfestedPlot = null;
     public static volatile int currentPestSessionId = 0;
     private static final long PEST_REENTRY_COOLDOWN_MS = 30_000;
+    private static final long DEFAULT_NO_PEST_RETURN_DELAY_MS = 10_000;
+    private static final long MANUAL_NO_PEST_RETURN_DELAY_MS = 2500;
     private static long lastZeroPestTime = 0;
     private static volatile int predictedAliveCount = 0;
     private static volatile long lastChatSpawnUpdateMs = 0;
@@ -34,6 +36,10 @@ public class PestManager {
 
     private static void startPestReentryCooldown() {
         pestReentryCooldownUntilMs = System.currentTimeMillis() + PEST_REENTRY_COOLDOWN_MS;
+    }
+
+    private static long getNoPestReturnDelayMs() {
+        return MacroConfig.manualPestClean ? MANUAL_NO_PEST_RETURN_DELAY_MS : DEFAULT_NO_PEST_RETURN_DELAY_MS;
     }
 
     public static void reset() {
@@ -83,7 +89,7 @@ public class PestManager {
             if (effectiveAlive <= 0) {
                 if (lastZeroPestTime == 0) {
                     lastZeroPestTime = System.currentTimeMillis();
-                } else if (System.currentTimeMillis() - lastZeroPestTime > 10000) {
+                } else if (System.currentTimeMillis() - lastZeroPestTime > getNoPestReturnDelayMs()) {
                     if (client.player != null) {
                         client.player.displayClientMessage(
                                 Component.literal("§cFail-safe: No pests detected for 10s. Returning to farm."), true);
@@ -97,6 +103,10 @@ public class PestManager {
             }
         } else {
             lastZeroPestTime = 0;
+        }
+
+        if (!MacroConfig.autoPestEnabled) {
+            return;
         }
 
         if (isCleaningInProgress)
@@ -118,6 +128,13 @@ public class PestManager {
 
     public static boolean tryStartCleaningSequenceFromChat(Minecraft client, String requestedPlot, int spawnedCount) {
         if (client == null || client.getConnection() == null || client.player == null || isCleaningInProgress) {
+            return false;
+        }
+
+        if (!MacroConfig.autoPestEnabled) {
+            if (MacroConfig.showDebug) {
+                ClientUtils.sendDebugMessage(client, "Chat pest trigger ignored: Auto Pest is paused.");
+            }
             return false;
         }
 

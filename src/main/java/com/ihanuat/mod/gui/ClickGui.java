@@ -554,6 +554,14 @@ public class ClickGui extends Screen {
 
     private Panel autoPestPanel(int[] pos) {
         Panel p = makePanel("Auto Pest", pos);
+        p.add(toggle("Enabled", () -> MacroConfig.autoPestEnabled, v -> {
+            MacroConfig.autoPestEnabled = v;
+            save();
+        }));
+        p.add(toggle("Manual Clean", () -> MacroConfig.manualPestClean, v -> {
+            MacroConfig.manualPestClean = v;
+            save();
+        }));
         p.add(slider("Threshold", "pestThreshold", 1, 8, () -> MacroConfig.pestThreshold, v -> {
             MacroConfig.pestThreshold = v;
             save();
@@ -1143,6 +1151,8 @@ public class ClickGui extends Screen {
                     "Threshold — Minimum amount of pets in inventory needed to sell to George.",
             };
             case "autopest" -> new String[]{
+                    "Enabled — Master switch for automatic pest handling. Turn this off to pause auto-starting pest runs while leaving the rest of the macro alone.",
+                    "Manual Clean — Let the macro handle setup and movement, then stop before launching the pest cleaner script so you can clear pests manually. Once pests are gone, it will warp back to garden and resume farming automatically.",
                     "Threshold — Number of pests that must be present before the pest cleaner activates.",
                     "Trigger on Chat — Automatically start the pest cleaner when the pest spawning notification appears in chat.",
                     "Delay Crop Fever — Wait for Crop Fever to expire before clearing pests, so you don't lose the bonus.",

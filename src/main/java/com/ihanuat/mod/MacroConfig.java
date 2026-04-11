@@ -32,6 +32,8 @@ public class MacroConfig {
 
     // ── Defaults ──────────────────────────────────────────────────────────────
     public static final int DEFAULT_PEST_THRESHOLD = 5;
+    public static final boolean DEFAULT_AUTO_PEST_ENABLED = true;
+    public static final boolean DEFAULT_MANUAL_PEST_CLEAN = false;
     public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = true;
     public static final int DEFAULT_VISITOR_THRESHOLD = 5;
     public static final boolean DEFAULT_AUTO_WARDROBE_PEST = true;
@@ -161,6 +163,8 @@ public class MacroConfig {
 
     // ── Live fields ───────────────────────────────────────────────────────────
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
+    public static boolean autoPestEnabled = DEFAULT_AUTO_PEST_ENABLED;
+    public static boolean manualPestClean = DEFAULT_MANUAL_PEST_CLEAN;
     public static boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
     public static final int DEFAULT_PEST_CHAT_TRIGGER_DELAY = 0;
     public static int pestChatTriggerDelay = DEFAULT_PEST_CHAT_TRIGGER_DELAY;
@@ -475,6 +479,8 @@ public class MacroConfig {
     public static void save() {
         ConfigData d = new ConfigData();
         d.pestThreshold = pestThreshold;
+        d.autoPestEnabled = autoPestEnabled;
+        d.manualPestClean = manualPestClean;
         d.triggerPestOnChat = triggerPestOnChat;
         d.pestChatTriggerDelay = pestChatTriggerDelay;
         d.visitorThreshold = visitorThreshold;
@@ -607,6 +613,8 @@ public class MacroConfig {
             ConfigData d = GSON.fromJson(r, ConfigData.class);
             if (d == null) return;
             pestThreshold = d.pestThreshold;
+            autoPestEnabled = d.autoPestEnabled;
+            manualPestClean = d.manualPestClean;
             triggerPestOnChat = d.triggerPestOnChat;
             pestChatTriggerDelay = d.pestChatTriggerDelay;
             visitorThreshold = d.visitorThreshold;
@@ -799,6 +807,8 @@ public class MacroConfig {
 
     private static class ConfigData {
         int pestThreshold = DEFAULT_PEST_THRESHOLD;
+        boolean autoPestEnabled = DEFAULT_AUTO_PEST_ENABLED;
+        boolean manualPestClean = DEFAULT_MANUAL_PEST_CLEAN;
         boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
         int pestChatTriggerDelay = 0;
         int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;

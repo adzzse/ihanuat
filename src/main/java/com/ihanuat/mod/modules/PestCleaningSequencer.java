@@ -191,6 +191,15 @@ public class PestCleaningSequencer {
                     warpToInfestedPlotIfNeeded(client, currentInfestedPlot, false);
                 }
 
+                if (MacroConfig.manualPestClean) {
+                    ClientUtils.sendDebugMessage(client,
+                            "Manual Pest Clean enabled; pausing after setup instead of starting pest cleaner script.");
+                    client.player.displayClientMessage(
+                            Component.literal("§eManual Pest Clean: clear the remaining pests manually. The macro will return to garden once no pests remain."),
+                            false);
+                    return;
+                }
+
                 startPestCleanerScript(client, currentInfestedPlot);
 
             } catch (Exception e) {
