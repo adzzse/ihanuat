@@ -11,6 +11,8 @@ import java.io.FileWriter;
 public class MacroConfig {
     private static final long DAY_MS = 24L * 60L * 60L * 1000L;
     private static final long CORRUPTED_EPOCH_WINDOW_MS = 30L * DAY_MS;
+    public static final File CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve("ihanuat").toFile();
+    public static final File SOUNDS_DIR = new File(CONFIG_DIR, "sounds");
 
     public enum PetRarity {
         COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC
@@ -32,6 +34,12 @@ public class MacroConfig {
 
     // ── Defaults ──────────────────────────────────────────────────────────────
     public static final int DEFAULT_PEST_THRESHOLD = 5;
+    public static final boolean DEFAULT_AUTO_PEST_ENABLED = true;
+    public static final boolean DEFAULT_MANUAL_PEST_CLEAN = false;
+    public static final int DEFAULT_MANUAL_PEST_RETURN_DELAY = 2500;
+    public static final boolean DEFAULT_MANUAL_PEST_ALERT_SOUND = false;
+    public static final int DEFAULT_MANUAL_PEST_REWARP_AT = 0;
+    public static final String DEFAULT_MANUAL_PEST_SOUND_PATH = "";
     public static final boolean DEFAULT_TRIGGER_PEST_ON_CHAT = true;
     public static final int DEFAULT_VISITOR_THRESHOLD = 5;
     public static final boolean DEFAULT_AUTO_WARDROBE_PEST = true;
@@ -161,6 +169,12 @@ public class MacroConfig {
 
     // ── Live fields ───────────────────────────────────────────────────────────
     public static int pestThreshold = DEFAULT_PEST_THRESHOLD;
+    public static boolean autoPestEnabled = DEFAULT_AUTO_PEST_ENABLED;
+    public static boolean manualPestClean = DEFAULT_MANUAL_PEST_CLEAN;
+    public static int manualPestReturnDelay = DEFAULT_MANUAL_PEST_RETURN_DELAY;
+    public static boolean manualPestAlertSound = DEFAULT_MANUAL_PEST_ALERT_SOUND;
+    public static int manualPestRewarpAt = DEFAULT_MANUAL_PEST_REWARP_AT;
+    public static String manualPestSoundPath = DEFAULT_MANUAL_PEST_SOUND_PATH;
     public static boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
     public static final int DEFAULT_PEST_CHAT_TRIGGER_DELAY = 0;
     public static int pestChatTriggerDelay = DEFAULT_PEST_CHAT_TRIGGER_DELAY;
@@ -473,8 +487,16 @@ public class MacroConfig {
     }
 
     public static void save() {
+        if (!CONFIG_DIR.exists()) CONFIG_DIR.mkdirs();
+        if (!SOUNDS_DIR.exists()) SOUNDS_DIR.mkdirs();
         ConfigData d = new ConfigData();
         d.pestThreshold = pestThreshold;
+        d.autoPestEnabled = autoPestEnabled;
+        d.manualPestClean = manualPestClean;
+        d.manualPestReturnDelay = manualPestReturnDelay;
+        d.manualPestAlertSound = manualPestAlertSound;
+        d.manualPestRewarpAt = manualPestRewarpAt;
+        d.manualPestSoundPath = manualPestSoundPath;
         d.triggerPestOnChat = triggerPestOnChat;
         d.pestChatTriggerDelay = pestChatTriggerDelay;
         d.visitorThreshold = visitorThreshold;
@@ -600,6 +622,8 @@ public class MacroConfig {
     }
 
     public static void load() {
+        if (!CONFIG_DIR.exists()) CONFIG_DIR.mkdirs();
+        if (!SOUNDS_DIR.exists()) SOUNDS_DIR.mkdirs();
         saveDefaultsIfAbsent(); // write defaults file once on first launch
         if (!CONFIG_FILE.exists()) { save(); return; }
         boolean shouldRewriteConfig = false;
@@ -607,6 +631,12 @@ public class MacroConfig {
             ConfigData d = GSON.fromJson(r, ConfigData.class);
             if (d == null) return;
             pestThreshold = d.pestThreshold;
+            autoPestEnabled = d.autoPestEnabled;
+            manualPestClean = d.manualPestClean;
+            manualPestReturnDelay = Math.max(0, Math.min(10000, d.manualPestReturnDelay));
+            manualPestAlertSound = d.manualPestAlertSound;
+            manualPestRewarpAt = Math.max(0, Math.min(8, d.manualPestRewarpAt));
+            manualPestSoundPath = d.manualPestSoundPath != null ? d.manualPestSoundPath : DEFAULT_MANUAL_PEST_SOUND_PATH;
             triggerPestOnChat = d.triggerPestOnChat;
             pestChatTriggerDelay = d.pestChatTriggerDelay;
             visitorThreshold = d.visitorThreshold;
@@ -799,6 +829,12 @@ public class MacroConfig {
 
     private static class ConfigData {
         int pestThreshold = DEFAULT_PEST_THRESHOLD;
+        boolean autoPestEnabled = DEFAULT_AUTO_PEST_ENABLED;
+        boolean manualPestClean = DEFAULT_MANUAL_PEST_CLEAN;
+        int manualPestReturnDelay = DEFAULT_MANUAL_PEST_RETURN_DELAY;
+        boolean manualPestAlertSound = DEFAULT_MANUAL_PEST_ALERT_SOUND;
+        int manualPestRewarpAt = DEFAULT_MANUAL_PEST_REWARP_AT;
+        String manualPestSoundPath = DEFAULT_MANUAL_PEST_SOUND_PATH;
         boolean triggerPestOnChat = DEFAULT_TRIGGER_PEST_ON_CHAT;
         int pestChatTriggerDelay = 0;
         int visitorThreshold = DEFAULT_VISITOR_THRESHOLD;

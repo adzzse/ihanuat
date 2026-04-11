@@ -1,5 +1,13 @@
 package com.ihanuat.mod.modules;
 
+import java.awt.Toolkit;
+import java.io.File;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineEvent;
+
 import com.ihanuat.mod.MacroConfig;
 import com.ihanuat.mod.MacroState;
 import com.ihanuat.mod.MacroWorkerThread;
@@ -191,6 +199,16 @@ public class PestCleaningSequencer {
                     warpToInfestedPlotIfNeeded(client, currentInfestedPlot, false);
                 }
 
+                if (MacroConfig.manualPestClean) {
+                    ClientUtils.sendDebugMessage(client,
+                            "Manual Pest Clean enabled; pausing after setup instead of starting pest cleaner script.");
+                    playManualCleanAlert(client);
+                    client.player.displayClientMessage(
+                            Component.literal("§eManual Pest Clean: clear pests manually. The macro will return once pest count reaches your Manual Pest target."),
+                            false);
+                    return;
+                }
+
                 startPestCleanerScript(client, currentInfestedPlot);
 
             } catch (Exception e) {
@@ -306,5 +324,65 @@ public class PestCleaningSequencer {
         GearManager.swapToFarmingTool(client);
 
         com.ihanuat.mod.util.CommandUtils.startScript(client, ".ez-startscript misc:pestCleaner", 0);
+    }
+
+    private static void playManualCleanAlert(Minecraft client) {
+        if (!MacroConfig.manualPestAlertSound || client == null) {
+            return;
+        }
+
+        MacroWorkerThread.getInstance().submit("ManualPest-Alert", () -> {
+            try {
+                if (!playCustomManualAlert(client)) {
+                    Toolkit.getDefaultToolkit().beep();
+                    Thread.sleep(140);
+                    Toolkit.getDefaultToolkit().beep();
+                }
+            } catch (Throwable t) {
+                ClientUtils.sendDebugMessage(client, "Manual pest alert beep failed: " + t.getMessage());
+            }
+        });
+    }
+
+    private static boolean playCustomManualAlert(Minecraft client) {
+        String rawPath = MacroConfig.manualPestSoundPath;
+        if (rawPath == null || rawPath.isBlank()) {
+            return false;
+        }
+
+        File file = resolveManualAlertSoundFile(rawPath.trim());
+        if (!file.isFile()) {
+            ClientUtils.sendDebugMessage(client, "Manual pest custom sound not found: " + file.getAbsolutePath());
+            return false;
+        }
+
+        try (AudioInputStream stream = AudioSystem.getAudioInputStream(file)) {
+            Clip clip = AudioSystem.getClip();
+            clip.open(stream);
+            clip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP || event.getType() == LineEvent.Type.CLOSE) {
+                    clip.close();
+                }
+            });
+            clip.start();
+            return true;
+        } catch (Exception e) {
+            ClientUtils.sendDebugMessage(client, "Manual pest custom sound failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private static File resolveManualAlertSoundFile(String rawPath) {
+        File direct = new File(rawPath);
+        if (direct.isAbsolute()) {
+            return direct;
+        }
+
+        File inSoundsDir = new File(MacroConfig.SOUNDS_DIR, rawPath);
+        if (inSoundsDir.isFile()) {
+            return inSoundsDir;
+        }
+
+        return direct;
     }
 }
