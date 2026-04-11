@@ -217,7 +217,7 @@ public class MacroHudRenderer {
         }
 
         if (editMode) {
-            String hint = isDragging ? "moving..." : isResizing ? "resizing..." : "drag \u2022 ctrl+drag to resize";
+            String hint = isDragging ? "moving..." : isResizing ? "resizing..." : "drag \u2022 hold modifier to resize";
             int hintX = (PANEL_W - client.font.width(hint)) / 2;
             g.drawString(client.font, hint, hintX, panelH + 3, labelColor, false);
         }

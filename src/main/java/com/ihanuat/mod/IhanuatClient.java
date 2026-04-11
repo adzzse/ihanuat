@@ -1,5 +1,6 @@
 package com.ihanuat.mod;
 
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +50,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 public class IhanuatClient implements ClientModInitializer {
+    private static final boolean IS_MAC_OS =
+            System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac");
     private static KeyMapping configKey;
     private static KeyMapping startScriptKey;
 
@@ -133,13 +136,13 @@ public class IhanuatClient implements ClientModInitializer {
             ScreenMouseEvents.allowMouseClick(screen).register((scr, event) -> {
                 if (event.button() == 0) {
                     if (MacroHudRenderer.isHovered(event.x(), event.y())) {
-                        boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
-                        MacroHudRenderer.startDrag(event.x(), event.y(), ctrl);
+                        boolean resizeModifier = isHudResizeModifierDown(event.modifiers());
+                        MacroHudRenderer.startDrag(event.x(), event.y(), resizeModifier);
                         return false;
                     }
                     if (com.ihanuat.mod.gui.ProfitHudRenderer.isHovered(event.x(), event.y())) {
-                        boolean ctrl = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
-                        com.ihanuat.mod.gui.ProfitHudRenderer.startDrag(event.x(), event.y(), ctrl);
+                        boolean resizeModifier = isHudResizeModifierDown(event.modifiers());
+                        com.ihanuat.mod.gui.ProfitHudRenderer.startDrag(event.x(), event.y(), resizeModifier);
                         return false;
                     }
                 }
@@ -772,5 +775,12 @@ public class IhanuatClient implements ClientModInitializer {
 
     public static boolean shouldSuppressMouseRotation() {
         return RotationManager.isRotating();
+    }
+
+    public static boolean isHudResizeModifierDown(int modifiers) {
+        if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+            return true;
+        }
+        return IS_MAC_OS && (modifiers & GLFW.GLFW_MOD_SUPER) != 0;
     }
 }
