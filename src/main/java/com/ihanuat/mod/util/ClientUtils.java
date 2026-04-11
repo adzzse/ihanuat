@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ClientUtils {
     private static long lastCommandTime = 0;
@@ -26,6 +28,7 @@ public class ClientUtils {
     public static final java.util.regex.Pattern COLOR_PATTERN = java.util.regex.Pattern.compile("(?i)§[0-9A-FK-ORZ]");
     public static final java.util.regex.Pattern COMMA_PATTERN = java.util.regex.Pattern.compile(",");
     public static final java.util.regex.Pattern NON_DIGIT_PATTERN = java.util.regex.Pattern.compile("[^0-9]");
+    private static final Pattern SIDEBAR_PEST_COUNT_PATTERN = Pattern.compile("(?i)\\bx\\s*(\\d+)\\b");
     private static MacroState.Location cachedLocation = MacroState.Location.UNKNOWN;
     private static long cachedLocationAtMs = 0;
 
@@ -353,6 +356,58 @@ public class ClientUtils {
         }
 
         return "Unknown";
+    }
+
+    public static int getGardenPestCountFromSidebar(Minecraft client) {
+        if (client.level == null || client.player == null)
+            return -1;
+
+        Scoreboard scoreboard = client.level.getScoreboard();
+        if (scoreboard == null)
+            return -1;
+
+        Objective sidebar = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+        if (sidebar == null)
+            return -1;
+
+        Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(sidebar);
+        String currentPlot = getCurrentPlot(client);
+
+        for (PlayerScoreEntry entry : scores) {
+            String entryName = entry.owner();
+            PlayerTeam team = scoreboard.getPlayersTeam(entryName);
+            String fullText = entryName;
+            if (team != null) {
+                fullText = team.getPlayerPrefix().getString() + entryName + team.getPlayerSuffix().getString();
+            }
+
+            String line = stripColor(fullText).trim();
+            String lowerLine = line.toLowerCase();
+            boolean isPlotLine = lowerLine.contains("plot -")
+                    || lowerLine.contains("plot:")
+                    || lowerLine.contains("plot #");
+            if (!isPlotLine) {
+                continue;
+            }
+
+            if (!"Unknown".equalsIgnoreCase(currentPlot)
+                    && !lowerLine.matches(".*plot\\s*[:\\-#]\\s*" + java.util.regex.Pattern.quote(currentPlot.toLowerCase()) + ".*")) {
+                continue;
+            }
+
+            Matcher matcher = SIDEBAR_PEST_COUNT_PATTERN.matcher(line);
+            if (matcher.find()) {
+                try {
+                    return Integer.parseInt(matcher.group(1));
+                } catch (NumberFormatException ignored) {
+                    return -1;
+                }
+            }
+
+            return 0;
+        }
+
+        return -1;
     }
 
     public static boolean hasLineOfSight(Player player, Vec3 target) {
