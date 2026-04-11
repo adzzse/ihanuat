@@ -155,6 +155,11 @@ public class PestReturnManager {
         if (client.player == null)
             return;
 
+        if (!isPlayerFlying(client)) {
+            ClientUtils.sendDebugMessage(client, "Unfly skipped: player is not currently flying.");
+            return;
+        }
+
         if (MacroConfig.unflyMode == MacroConfig.UnflyMode.DOUBLE_TAP_SPACE) {
             isStoppingFlight = true;
             flightStopStage = 0;
@@ -171,6 +176,11 @@ public class PestReturnManager {
         if (client.player == null)
             return;
 
+        if (!isPlayerFlying(client)) {
+            ClientUtils.sendDebugMessage(client, "Sneak unfly skipped: player is not currently flying.");
+            return;
+        }
+
         if (MacroConfig.unflyMode == MacroConfig.UnflyMode.SNEAK) {
             Thread.sleep(50);
             client.execute(() -> {
@@ -183,6 +193,10 @@ public class PestReturnManager {
                     client.options.keyShift.setDown(false);
             });
         }
+    }
+
+    private static boolean isPlayerFlying(Minecraft client) {
+        return client.player != null && client.player.getAbilities().flying;
     }
 
     private static void finalizeReturnToFarm(Minecraft client) {
