@@ -16,10 +16,15 @@ public class PestManager {
     private static final long PEST_REENTRY_COOLDOWN_MS = 30_000;
     private static final long DEFAULT_NO_PEST_RETURN_DELAY_MS = 10_000;
     private static long lastZeroPestTime = 0;
+    private static volatile boolean manualReturnArmed = false;
     private static volatile int predictedAliveCount = 0;
     private static volatile long lastChatSpawnUpdateMs = 0;
     private static volatile long pestReentryCooldownUntilMs = 0;
     private static final long TAB_SYNC_GRACE_MS = 5000;
+    private static volatile int lastLoggedManualAliveCount = Integer.MIN_VALUE;
+    private static volatile boolean lastLoggedManualArmed = false;
+    private static volatile boolean lastLoggedManualTimerActive = false;
+    private static volatile String lastLoggedManualSource = "";
 
     private static boolean isThresholdMet(int aliveCount) {
         return aliveCount >= MacroConfig.pestThreshold || aliveCount >= 8;
@@ -49,9 +54,14 @@ public class PestManager {
         isCleaningInProgress = false;
         currentInfestedPlot = null;
         lastZeroPestTime = 0;
+        manualReturnArmed = false;
         predictedAliveCount = 0;
         lastChatSpawnUpdateMs = 0;
         pestReentryCooldownUntilMs = 0;
+        lastLoggedManualAliveCount = Integer.MIN_VALUE;
+        lastLoggedManualArmed = false;
+        lastLoggedManualTimerActive = false;
+        lastLoggedManualSource = "";
         currentPestSessionId++;
         
         PestPrepSwapManager.resetState();
@@ -71,6 +81,21 @@ public class PestManager {
         PestTabListParser.TabListData data = PestTabListParser.parseTabList(client);
         syncPredictedAliveFromTab(data.aliveCount);
         int effectiveAlive = getEffectiveAliveCount(data.aliveCount);
+        String manualAliveSource = "effective";
+        if (currentState == MacroState.State.CLEANING && MacroConfig.manualPestClean) {
+            int sidebarAliveCount = ClientUtils.getGardenPestCountFromSidebar(client);
+            if (sidebarAliveCount >= 0) {
+                predictedAliveCount = sidebarAliveCount;
+                effectiveAlive = sidebarAliveCount;
+                manualAliveSource = "sidebar";
+            } else if (data.aliveCount >= 0) {
+                predictedAliveCount = data.aliveCount;
+                effectiveAlive = data.aliveCount;
+                manualAliveSource = "tab";
+            } else {
+                manualAliveSource = "predicted";
+            }
+        }
         
         // Update bonus status
         PestBonusManager.isBonusInactive = data.bonusFound;
@@ -88,24 +113,55 @@ public class PestManager {
         }
 
         if (currentState == MacroState.State.CLEANING) {
+            if (MacroConfig.manualPestClean && effectiveAlive > getReturnReadyPestCount()) {
+                manualReturnArmed = true;
+            }
+            if (MacroConfig.manualPestClean) {
+                logManualReturnState(client, effectiveAlive, manualAliveSource);
+            }
 
-            if (effectiveAlive <= getReturnReadyPestCount()) {
+            if (effectiveAlive <= getReturnReadyPestCount() && (!MacroConfig.manualPestClean || manualReturnArmed)) {
                 if (lastZeroPestTime == 0) {
                     lastZeroPestTime = System.currentTimeMillis();
+                    if (MacroConfig.manualPestClean && MacroConfig.showDebug) {
+                        ClientUtils.sendDebugMessage(client,
+                                "Manual pest countdown started: alive=" + effectiveAlive
+                                        + ", source=" + manualAliveSource
+                                        + ", target<=" + getReturnReadyPestCount()
+                                        + ", delayMs=" + getNoPestReturnDelayMs());
+                    }
                 } else if (System.currentTimeMillis() - lastZeroPestTime > getNoPestReturnDelayMs()) {
                     if (client.player != null) {
                         client.player.displayClientMessage(
                                 Component.literal("§cFail-safe: No pests detected for 10s. Returning to farm."), true);
+                    }
+                    if (MacroConfig.manualPestClean && MacroConfig.showDebug) {
+                        ClientUtils.sendDebugMessage(client,
+                                "Manual pest return triggered: alive=" + effectiveAlive
+                                        + ", source=" + manualAliveSource
+                                        + ", armed=" + manualReturnArmed);
                     }
                     lastZeroPestTime = 0;
                     handlePestCleaningFinished(client);
                     return;
                 }
             } else {
+                if (MacroConfig.manualPestClean && lastZeroPestTime != 0 && MacroConfig.showDebug) {
+                    ClientUtils.sendDebugMessage(client,
+                            "Manual pest countdown reset: alive=" + effectiveAlive
+                                    + ", source=" + manualAliveSource
+                                    + ", target<=" + getReturnReadyPestCount()
+                                    + ", armed=" + manualReturnArmed);
+                }
                 lastZeroPestTime = 0;
             }
         } else {
             lastZeroPestTime = 0;
+            manualReturnArmed = false;
+            lastLoggedManualAliveCount = Integer.MIN_VALUE;
+            lastLoggedManualArmed = false;
+            lastLoggedManualTimerActive = false;
+            lastLoggedManualSource = "";
         }
 
         if (!MacroConfig.autoPestEnabled) {
@@ -199,6 +255,29 @@ public class PestManager {
             return predictedAliveCount;
         }
         return Math.max(tabAliveCount, predictedAliveCount);
+    }
+
+    private static void logManualReturnState(Minecraft client, int effectiveAlive, String source) {
+        if (!MacroConfig.showDebug) {
+            return;
+        }
+
+        boolean timerActive = lastZeroPestTime != 0;
+        if (effectiveAlive != lastLoggedManualAliveCount
+                || manualReturnArmed != lastLoggedManualArmed
+                || timerActive != lastLoggedManualTimerActive
+                || !source.equals(lastLoggedManualSource)) {
+            ClientUtils.sendDebugMessage(client,
+                    "Manual pest state: alive=" + effectiveAlive
+                            + ", source=" + source
+                            + ", target<=" + getReturnReadyPestCount()
+                            + ", armed=" + manualReturnArmed
+                            + ", timerActive=" + timerActive);
+            lastLoggedManualAliveCount = effectiveAlive;
+            lastLoggedManualArmed = manualReturnArmed;
+            lastLoggedManualTimerActive = timerActive;
+            lastLoggedManualSource = source;
+        }
     }
 
     public static void handlePestCleaningFinished(Minecraft client) {
